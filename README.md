@@ -42,7 +42,12 @@ bash scripts/run_all.sh          # every step in order
 # or step by step:
 python scripts/prepare_data.py   # stratified subsample -> data/processed/*.parquet
 jupyter notebook notebooks/01_eda.ipynb
+python scripts/run_baselines.py  # RF, XGB, LR, SVM, KNN + soft-voting ensemble; in- and cross-dataset
+python scripts/summarise_baselines.py   # paper tables in results/
 ```
+`run_baselines.py` appends to `results/baselines_raw.csv` and skips finished
+runs, so an interrupted Colab session can simply rerun it. Use `--all-seeds`
+for the final 5-seed numbers.
 
 Dry run without the real data:
 ```bash

@@ -24,3 +24,15 @@ subsample:
 
 split:
   test_size: 0.2            # within-dataset hold-out, stratified on Attack
+
+baselines:
+  models: [RF, XGB, LR, SVM, KNN]
+  ensemble: [RF, XGB, LR, SVM, KNN]   # soft-voting members ("ENS" in results)
+  feature_sets: [v2, v3]
+  max_train:                # stratified cap on source training rows per model
+    RF: 200000
+    XGB: 400000
+    LR: 400000
+    SVM: 20000              # RBF-SVM is O(n^2); larger is too slow on Colab
+    KNN: 50000
+  max_test: 100000          # stratified cap on each test split (speed)

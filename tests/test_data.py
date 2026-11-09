@@ -53,3 +53,20 @@ def test_min_benign_keeps_benign_in_attack_heavy_data():
     counts = pd.Series({"DDoS": 10_000_000, "DoS": 6_900_000, "Benign": 50_000})
     f = class_fractions(counts, n_rows=500_000, min_per_class=2_000, min_benign=100_000)
     assert f["Benign"] == 1.0          # all 50k benign kept
+
+
+def test_baselines_and_summary_on_toy_data(tmp_path):
+    raw, proc, res = tmp_path / "raw", tmp_path / "proc", tmp_path / "res"
+    subprocess.run([sys.executable, "scripts/make_toy_data.py", str(raw)], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/prepare_data.py", "--raw-dir", str(raw),
+                    "--out-dir", str(proc), "--n-rows", "2000"], cwd=ROOT, check=True)
+    cmd = [sys.executable, "scripts/run_baselines.py", "--processed-dir", str(proc),
+           "--results-dir", str(res), "--models", "LR", "KNN", "--feature-sets", "v3"]
+    subprocess.run(cmd, cwd=ROOT, check=True)
+    df = pd.read_csv(res / "baselines_raw.csv")
+    assert len(df) == 4 * 4 * 3                     # 4 sources x 4 targets x (LR, KNN, ENS)
+    assert {"accuracy", "precision", "recall", "f1", "specificity"} <= set(df.columns)
+    subprocess.run(cmd, cwd=ROOT, check=True)       # resume: nothing re-run
+    assert len(pd.read_csv(res / "baselines_raw.csv")) == len(df)
+    subprocess.run([sys.executable, "scripts/summarise_baselines.py", str(res)], cwd=ROOT, check=True)
+    assert (res / "table_cross_f1_v3.csv").exists()
