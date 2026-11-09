@@ -1,0 +1,24 @@
+# Global experiment configuration. Every script reads this file.
+seed: 42
+seeds: [42, 43, 44, 45, 46]        # repeated runs for mean +/- SD
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  results_dir: results
+
+# The four NetFlow v3 datasets (UQ). File names as downloaded from UQ RDM;
+# adjust if your downloaded CSV names differ.
+datasets:
+  unsw:    {name: NF-UNSW-NB15-v3,        file: NF-UNSW-NB15-v3.csv}
+  toniot:  {name: NF-ToN-IoT-v3,          file: NF-ToN-IoT-v3.csv}
+  botiot:  {name: NF-BoT-IoT-v3,          file: NF-BoT-IoT-v3.csv}
+  cic2018: {name: NF-CSE-CIC-IDS2018-v3,  file: NF-CSE-CIC-IDS2018-v3.csv}
+
+subsample:
+  n_rows: 500000            # target rows per dataset after subsampling
+  min_per_class: 2000       # keep all rows of attack classes smaller than this
+  chunksize: 1000000        # CSV rows read at a time (keeps RAM low on Colab)
+
+split:
+  test_size: 0.2            # within-dataset hold-out, stratified on Attack
