@@ -1,8 +1,8 @@
 """Baseline classifiers and the soft-voting ensemble.
 
 All models see the same preprocessing: log1p on the (non-negative, heavy
-tailed) NetFlow counters, then standardisation fitted on the SOURCE training
-data only. Fitting the scaler on the target would leak target information.
+tailed) NetFlow counters (features.to_matrix), then standardisation fitted
+on the SOURCE training data only. Fitting the scaler on the target would leak target information.
 
 SVM and KNN do not scale to hundreds of thousands of rows, so each model has
 its own cap on training rows (config: baselines.max_train). The cap is applied
@@ -15,16 +15,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 
-def _log1p_clip(x):
-    return np.log1p(np.clip(x, 0, None))
-
-
 def preprocessor():
-    return [FunctionTransformer(_log1p_clip, feature_names_out="one-to-one"), StandardScaler()]
+    # log1p + inf handling already happen in features.to_matrix
+    return [StandardScaler()]
 
 
 def make_model(name: str, seed: int):

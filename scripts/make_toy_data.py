@@ -27,6 +27,9 @@ def make(path: Path, n: int, attacks: dict[str, float], seed: int) -> None:
     cols += V3_EXTRA[2:]
     df = pd.DataFrame(rng.integers(0, 1000, size=(n, len(cols))), columns=cols)
     names = list(attacks)
+    df = df.astype("float64")
+    df.loc[df.index[::97], "SRC_TO_DST_SECOND_BYTES"] = np.inf       # as in the real data
+    df.loc[df.index[::89], "DST_TO_SRC_IAT_MAX"] = 1e300
     df["Attack"] = rng.choice(names, size=n, p=list(attacks.values()))
     df["Label"] = (df["Attack"] != "Benign").astype(int)
     df.to_csv(path, index=False)

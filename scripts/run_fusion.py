@@ -28,7 +28,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from src.evaluate import binary_metrics  # noqa: E402
-from src.features import LABEL_COL, feature_sets  # noqa: E402
+from src.features import LABEL_COL, feature_sets, to_matrix  # noqa: E402
 from src.fusion import logit, make_fewshot_learner, predict_proba_chunked  # noqa: E402
 from src.models import make_model  # noqa: E402
 from src.splits import cap, split  # noqa: E402
@@ -89,7 +89,7 @@ def main() -> None:
             sources = [[k for k in keys if k != tgt]] if mode == "loo" else [[k] for k in keys if k != tgt]
             tr_t, te_t = splits[tgt]
             te_t = cap(te_t, fc["max_test"], seed)
-            X_te = te_t[feats].to_numpy("float32")
+            X_te = to_matrix(te_t, feats)
             y_te = te_t[LABEL_COL].to_numpy()
             for src_list in sources:
                 src = "+".join(src_list)
@@ -116,7 +116,7 @@ def main() -> None:
                 per = fc["max_source_train"] // len(src_list)
                 src_tr = pd.concat([cap(splits[s][0], per, seed) for s in src_list])
                 xgb_src = make_model("XGB", seed)
-                xgb_src.fit(src_tr[feats].to_numpy("float32"), src_tr[LABEL_COL].to_numpy())
+                xgb_src.fit(to_matrix(src_tr, feats), src_tr[LABEL_COL].to_numpy())
                 t_src = time.time() - t0
                 p_src_te = xgb_src.predict_proba(X_te)[:, 1]
                 if (str(seed), mode, src, tgt, "0", "XGB-src") not in done:
@@ -124,14 +124,14 @@ def main() -> None:
 
                 for k in todo_budgets:
                     lab = sample_labelled(tr_t, k, seed)
-                    X_l, y_l = lab[feats].to_numpy("float32"), lab[LABEL_COL].to_numpy()
+                    X_l, y_l = to_matrix(lab, feats), lab[LABEL_COL].to_numpy()
 
                     t0 = time.time()
                     xgb_k = make_model("XGB", seed).fit(X_l, y_l)
                     record("XGB-k", k, xgb_k.predict_proba(X_te)[:, 1], time.time() - t0)
 
-                    # TabPFN works on raw-scale features; log1p tames the heavy tails
-                    Z_l, Z_te = np.log1p(np.clip(X_l, 0, None)), np.log1p(np.clip(X_te, 0, None))
+                    # features are already log1p-transformed (to_matrix); TabPFN needs no scaling
+                    Z_l, Z_te = X_l, X_te
                     t0 = time.time()
                     m = make_fewshot_learner(learner, seed, fc["tabpfn_version"]).fit(Z_l, y_l)
                     record("TabPFN-k" if learner == "tabpfn" else f"{learner}-k", k,

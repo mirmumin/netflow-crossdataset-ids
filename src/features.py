@@ -8,6 +8,7 @@ drop or add columns: check_schema() reports exactly what was found.
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 LABEL_COL = "Label"     # 0 = benign, 1 = attack
@@ -71,3 +72,17 @@ def check_schema(df: pd.DataFrame, name: str = "") -> dict:
     extra = v3_extra_columns(cols)
     return {"dataset": name, "n_cols": len(cols), "missing_v2": missing_v2,
             "v3_extra": extra, "n_v3_extra": len(extra)}
+
+
+def to_matrix(df: pd.DataFrame, feats: list[str]) -> np.ndarray:
+    """Feature matrix ready for any model.
+
+    Some NetFlow counters (e.g. per-second byte rates, IAT statistics) hold
+    infinities or values far beyond float32 range. All features are
+    non-negative counts/rates, so we map inf/NaN to finite values in float64
+    and apply log1p, which keeps the order of values (tree models are
+    unaffected) and brings everything into a small, float32-safe range.
+    """
+    x = df[feats].to_numpy(dtype="float64", na_value=np.nan)
+    x = np.nan_to_num(x, nan=0.0, posinf=np.finfo("float64").max / 10, neginf=0.0)
+    return np.log1p(np.clip(x, 0, None)).astype("float32")

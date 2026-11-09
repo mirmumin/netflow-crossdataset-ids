@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd  # noqa: E402
 
 from src.evaluate import binary_metrics  # noqa: E402
-from src.features import LABEL_COL, feature_sets  # noqa: E402
+from src.features import LABEL_COL, feature_sets, to_matrix  # noqa: E402
 from src.models import SoftVotingEnsemble, make_model  # noqa: E402
 from src.splits import cap, split  # noqa: E402
 from src.utils import load_config, resolve, set_seed  # noqa: E402
@@ -120,7 +120,7 @@ def main() -> None:
                     else:
                         trc = cap(tr, bl["max_train"].get(m), seed)
                         model = make_model(m, seed)
-                        model.fit(trc[feats].to_numpy("float32"), trc[LABEL_COL].to_numpy())
+                        model.fit(to_matrix(trc, feats), trc[LABEL_COL].to_numpy())
                         fit_s = time.time() - t0
                         model.fit_seconds_ = fit_s
                         fitted[m] = model
@@ -130,7 +130,7 @@ def main() -> None:
                     rows = []
                     for tgt in todo:
                         te = tests[tgt]
-                        p = model.predict_proba(te[feats].to_numpy("float32"))[:, 1]
+                        p = model.predict_proba(to_matrix(te, feats))[:, 1]
                         r = {"seed": seed, "feature_set": fs, "source": src, "target": tgt,
                              "model": m, "n_train": len(tr) if m == "ENS" else len(trc),
                              "n_test": len(te), "fit_seconds": round(fit_s, 2),
