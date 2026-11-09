@@ -36,12 +36,13 @@ def main(out: str = "tests/toy_raw") -> None:
     out_dir = Path(out)
     out_dir.mkdir(parents=True, exist_ok=True)
     specs = {
-        "NF-UNSW-NB15-v3.csv": {"Benign": 0.94, "Exploits": 0.04, "Worms": 0.02},
-        "NF-ToN-IoT-v3.csv": {"Benign": 0.6, "scanning": 0.3, "xss": 0.1},
-        "NF-BoT-IoT-v3.csv": {"Benign": 0.01, "DDoS": 0.6, "DoS": 0.39},
-        "NF-CSE-CIC-IDS2018-v3.csv": {"Benign": 0.87, "DDOS": 0.1, "Infilteration": 0.03},
+        "NF-UNSW-NB15-v3/NF-UNSW-NB15-v3.csv": {"Benign": 0.94, "Exploits": 0.04, "Worms": 0.02},
+        "NF-ToN-IoT-v3/NF-ToN-IoT-v3.csv": {"Benign": 0.6, "scanning": 0.3, "xss": 0.1},
+        "NF-BoT-IoT-v3/NF-BoT-IoT-v3.csv": {"Benign": 0.01, "DDoS": 0.6, "DoS": 0.39},
+        "NF-CICIDS2018-v3/NF-CICIDS2018-v3.csv": {"Benign": 0.87, "DDOS": 0.1, "Infilteration": 0.03},
     }
     for i, (name, p) in enumerate(specs.items()):
+        (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
         make(out_dir / name, 5000, p, seed=i)
     print(f"toy CSVs written to {out_dir}")
 

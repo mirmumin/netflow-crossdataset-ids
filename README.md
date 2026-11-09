@@ -27,18 +27,14 @@ Four NetFlow v3 datasets from the University of Queensland
 Licence: free for academic research when the dataset papers are cited;
 commercial use needs the authors' permission.
 
-**Download:** open the page above, follow each v3 link to UQ Research Data
-Manager, download and unzip, and put the CSVs in `data/raw/` with the file
-names listed in `configs/default.yaml` (rename or edit the config if yours
-differ). Raw data is not committed to git.
+**Download:** open the page above, NetFlow V3 tab, and download the four zips from UQ Research Data Manager. Unzip them and copy the four folders (`NF-UNSW-NB15-v3`, `NF-ToN-IoT-v3`, `NF-BoT-IoT-v3`, `NF-CICIDS2018-v3`) into `data/raw/` as they are; `configs/default.yaml` finds the CSV inside each folder.
 
 ## Setup
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
-On Google Colab or Kaggle: clone the repo, `pip install -r requirements.txt`,
-then upload or download the CSVs into `data/raw/`.
+On Google Colab: open `notebooks/00_colab_setup.ipynb` (mounts Drive, clones the repo, unzips the data, runs step 1). Raw data is not committed to git.
 
 ## Reproduce
 ```bash

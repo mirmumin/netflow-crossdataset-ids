@@ -21,6 +21,24 @@ from src.features import check_schema  # noqa: E402
 from src.utils import load_config, resolve, set_seed  # noqa: E402
 
 
+def find_csv(raw_dir: Path, pattern: str) -> Path | None:
+    """Resolve a config pattern to exactly one CSV under raw_dir."""
+    hits = sorted(p for p in raw_dir.glob(pattern) if p.is_file())
+    if not hits:  # also accept a bare CSV placed directly in raw_dir
+        stem = pattern.split("*")[0].rstrip("/")
+        hits = sorted(raw_dir.glob(f"{stem}*.csv"))
+    if not hits:
+        print(f"[skip] nothing in {raw_dir} matches '{pattern}'. Download it first (see README).")
+        return None
+    if len(hits) > 1:  # folders may also hold a feature-description CSV
+        data_like = [h for h in hits if "feature" not in h.name.lower()]
+        hits = data_like or hits
+    if len(hits) > 1:
+        names = ", ".join(str(h.relative_to(raw_dir)) for h in hits)
+        raise SystemExit(f"'{pattern}' matches several CSVs: {names}. Make the pattern more specific in configs/default.yaml.")
+    return hits[0]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
@@ -42,9 +60,8 @@ def main() -> None:
     for key, d in cfg["datasets"].items():
         if args.only and key not in args.only:
             continue
-        csv = raw_dir / d["file"]
-        if not csv.exists():
-            print(f"[skip] {csv} not found. Download it first (see README).")
+        csv = find_csv(raw_dir, d["file"])
+        if csv is None:
             continue
         print(f"[{key}] subsampling {csv.name} -> {n_rows} rows ...")
         df = stratified_subsample(csv, n_rows, sub["min_per_class"],

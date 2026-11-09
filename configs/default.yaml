@@ -7,13 +7,14 @@ paths:
   processed_dir: data/processed
   results_dir: results
 
-# The four NetFlow v3 datasets (UQ). File names as downloaded from UQ RDM;
-# adjust if your downloaded CSV names differ.
+# The four NetFlow v3 datasets (UQ). `file` is a glob pattern relative to
+# raw_dir, so you can copy the unzipped folders into data/raw/ as they are.
+# The pattern must match exactly one CSV.
 datasets:
-  unsw:    {name: NF-UNSW-NB15-v3,        file: NF-UNSW-NB15-v3.csv}
-  toniot:  {name: NF-ToN-IoT-v3,          file: NF-ToN-IoT-v3.csv}
-  botiot:  {name: NF-BoT-IoT-v3,          file: NF-BoT-IoT-v3.csv}
-  cic2018: {name: NF-CSE-CIC-IDS2018-v3,  file: NF-CSE-CIC-IDS2018-v3.csv}
+  unsw:    {name: NF-UNSW-NB15-v3,        file: "NF-UNSW-NB15-v3*/**/*.csv"}
+  toniot:  {name: NF-ToN-IoT-v3,          file: "NF-ToN-IoT-v3*/**/*.csv"}
+  botiot:  {name: NF-BoT-IoT-v3,          file: "NF-BoT-IoT-v3*/**/*.csv"}
+  cic2018: {name: NF-CSE-CIC-IDS2018-v3,  file: "NF-CICIDS2018-v3*/**/*.csv"}
 
 subsample:
   n_rows: 500000            # target rows per dataset after subsampling
