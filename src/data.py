@@ -22,7 +22,8 @@ def count_classes(csv_path: Path, chunksize: int) -> pd.Series:
     return counts.astype("int64").sort_values(ascending=False)
 
 
-def class_fractions(counts: pd.Series, n_rows: int, min_per_class: int) -> dict[str, float]:
+def class_fractions(counts: pd.Series, n_rows: int, min_per_class: int,
+                    min_benign: int = 0, benign_label: str = "Benign") -> dict[str, float]:
     """Sampling fraction per class.
 
     Classes with <= min_per_class rows are kept whole. The remaining budget is
@@ -40,13 +41,18 @@ def class_fractions(counts: pd.Series, n_rows: int, min_per_class: int) -> dict[
     for k, c in large.items():
         keep = max(int(round(c * frac)), min_per_class)
         out[k] = min(1.0, keep / c)
+    # Benign flows are needed to learn "normal" traffic in every network; in
+    # attack-heavy sets (BoT-IoT) proportional sampling leaves almost none.
+    if benign_label in counts.index and min_benign:
+        c = int(counts[benign_label])
+        out[benign_label] = max(out[benign_label], min(1.0, min_benign / c))
     return out
 
 
 def stratified_subsample(csv_path: Path, n_rows: int, min_per_class: int,
-                         chunksize: int, seed: int) -> pd.DataFrame:
+                         chunksize: int, seed: int, min_benign: int = 0) -> pd.DataFrame:
     counts = count_classes(csv_path, chunksize)
-    fracs = class_fractions(counts, n_rows, min_per_class)
+    fracs = class_fractions(counts, n_rows, min_per_class, min_benign)
     rng = np.random.default_rng(seed)
     parts = []
     for chunk in pd.read_csv(csv_path, chunksize=chunksize, low_memory=False):

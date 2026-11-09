@@ -47,3 +47,9 @@ def test_subsample_is_deterministic(tmp_path):
                        cwd=ROOT, check=True)
         outs.append(pd.read_parquet(out / "unsw.parquet"))
     pd.testing.assert_frame_equal(outs[0], outs[1])
+
+
+def test_min_benign_keeps_benign_in_attack_heavy_data():
+    counts = pd.Series({"DDoS": 10_000_000, "DoS": 6_900_000, "Benign": 50_000})
+    f = class_fractions(counts, n_rows=500_000, min_per_class=2_000, min_benign=100_000)
+    assert f["Benign"] == 1.0          # all 50k benign kept

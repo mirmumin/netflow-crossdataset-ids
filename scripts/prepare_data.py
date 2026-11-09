@@ -65,15 +65,25 @@ def main() -> None:
             continue
         print(f"[{key}] subsampling {csv.name} -> {n_rows} rows ...")
         df = stratified_subsample(csv, n_rows, sub["min_per_class"],
-                                  sub["chunksize"], cfg["seed"])
+                                  sub["chunksize"], cfg["seed"],
+                                  sub.get("min_benign", 0))
         schemas.append(check_schema(df, d["name"]))
         df.to_parquet(out_dir / f"{key}.parquet", index=False)
         summaries.append(summarise(df, d["name"]))
         print(f"[{key}] kept {len(df):,} rows, attack rate {df['Label'].mean():.3f}")
 
     if summaries:
-        pd.concat(summaries).to_csv(out_dir / "class_summary.csv", index=False)
-        (out_dir / "schema_report.json").write_text(json.dumps(schemas, indent=2))
+        # merge with summaries of datasets processed in earlier runs (--only)
+        summ = pd.concat(summaries)
+        old_path = out_dir / "class_summary.csv"
+        if old_path.exists():
+            old = pd.read_csv(old_path)
+            summ = pd.concat([old[~old["dataset"].isin(summ["dataset"])], summ])
+        summ.to_csv(old_path, index=False)
+        sch_path = out_dir / "schema_report.json"
+        old_s = json.loads(sch_path.read_text()) if sch_path.exists() else []
+        names = {s["dataset"] for s in schemas}
+        sch_path.write_text(json.dumps([s for s in old_s if s["dataset"] not in names] + schemas, indent=2))
         print(f"Wrote class_summary.csv and schema_report.json to {out_dir}")
 
 

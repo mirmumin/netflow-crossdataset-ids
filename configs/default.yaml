@@ -19,6 +19,7 @@ datasets:
 subsample:
   n_rows: 500000            # target rows per dataset after subsampling
   min_per_class: 2000       # keep all rows of attack classes smaller than this
+  min_benign: 100000        # keep at least this many benign flows (BoT-IoT is 99.7% attack)
   chunksize: 1000000        # CSV rows read at a time (keeps RAM low on Colab)
 
 split:
