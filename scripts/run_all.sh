@@ -7,4 +7,5 @@ python scripts/prepare_data.py          # week 1: subsample raw CSVs
 python scripts/run_baselines.py --all-seeds   # week 3: baselines, in- and cross-dataset
 python scripts/summarise_baselines.py
 python scripts/run_fusion.py --all-seeds     # week 5: proposed Fusion model (GPU)
+python scripts/make_report.py                # Word report of all tables (results/report.docx)
 # python scripts/run_shap.py            # week 6
