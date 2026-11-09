@@ -36,3 +36,11 @@ baselines:
     SVM: 20000              # RBF-SVM is O(n^2); larger is too slow on Colab
     KNN: 50000
   max_test: 100000          # stratified cap on each test split (speed)
+
+fusion:
+  mode: loo                 # loo: XGBoost trained on the other 3 networks; pair: one source network
+  budgets: [100, 1000]      # labelled target flows available
+  max_source_train: 400000  # rows for the source XGBoost (stratified cap)
+  max_test: 20000           # target test rows (TabPFN inference cost)
+  learner: tabpfn           # few-shot learner; "rf" is a CPU stand-in for testing only
+  tabpfn_version: v2        # v2 weights are not gated; "default" needs TABPFN_TOKEN

@@ -70,3 +70,16 @@ def test_baselines_and_summary_on_toy_data(tmp_path):
     assert len(pd.read_csv(res / "baselines_raw.csv")) == len(df)
     subprocess.run([sys.executable, "scripts/summarise_baselines.py", str(res)], cwd=ROOT, check=True)
     assert (res / "table_cross_f1_v3.csv").exists()
+
+
+def test_fusion_pipeline_with_rf_standin(tmp_path):
+    raw, proc, res = tmp_path / "raw", tmp_path / "proc", tmp_path / "res"
+    subprocess.run([sys.executable, "scripts/make_toy_data.py", str(raw)], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/prepare_data.py", "--raw-dir", str(raw),
+                    "--out-dir", str(proc), "--n-rows", "2000"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/run_fusion.py", "--processed-dir", str(proc),
+                    "--results-dir", str(res), "--learner", "rf", "--budgets", "100",
+                    "--targets", "unsw"], cwd=ROOT, check=True)
+    df = pd.read_csv(res / "fusion_raw_rf.csv")
+    assert set(df["method"]) == {"XGB-src", "XGB-k", "rf-k", "Fusion-k"}
+    assert (df["source"] == "toniot+botiot+cic2018").all()

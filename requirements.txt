@@ -10,7 +10,7 @@ xgboost==2.1.1
 lightgbm==4.5.0
 shap==0.46.0
 torch==2.4.1
-tabpfn==2.0.6
+tabpfn==9.2.0  # uses the openly licensed TabPFN v2 weights
 nbformat==5.10.4
 pytest==8.3.3
 scipy==1.14.1

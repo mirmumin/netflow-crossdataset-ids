@@ -44,7 +44,13 @@ python scripts/prepare_data.py   # stratified subsample -> data/processed/*.parq
 jupyter notebook notebooks/01_eda.ipynb
 python scripts/run_baselines.py  # RF, XGB, LR, SVM, KNN + soft-voting ensemble; in- and cross-dataset
 python scripts/summarise_baselines.py   # paper tables in results/
+python scripts/run_fusion.py     # proposed Fusion model vs XGB zero-shot / XGB-k / TabPFN-k (GPU)
 ```
+**Proposed Fusion model:** XGBoost trained on the source network(s) scores
+every target flow; that score is added as a feature, and TabPFN (a pretrained
+tabular foundation model) is fitted on only k = 100 or 1,000 labelled target
+flows. Default mode is leave-one-network-out (source = the other three).
+
 `run_baselines.py` appends to `results/baselines_raw.csv` and skips finished
 runs, so an interrupted Colab session can simply rerun it. Use `--all-seeds`
 for the final 5-seed numbers.
