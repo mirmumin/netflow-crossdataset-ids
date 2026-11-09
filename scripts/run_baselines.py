@@ -34,6 +34,18 @@ from src.utils import load_config, resolve, set_seed  # noqa: E402
 KEYS = ["seed", "feature_set", "source", "target", "model"]
 
 
+def append_rows(path: Path, rows: list[dict]) -> None:
+    """Append rows, matching the column order already in the file."""
+    df = pd.DataFrame(rows)
+    if path.exists():
+        header = pd.read_csv(path, nrows=0).columns.tolist()
+        df = df.reindex(columns=header + [c for c in df.columns if c not in header])
+        if len(df.columns) > len(header):        # new column: rewrite whole file
+            pd.concat([pd.read_csv(path), df]).to_csv(path, index=False)
+            return
+    df.to_csv(path, mode="a", index=False, header=not path.exists())
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--processed-dir", default=None)
@@ -60,12 +72,24 @@ def main() -> None:
     fsets = args.feature_sets or bl["feature_sets"]
     sources = args.sources or keys
     seeds = cfg["seeds"] if args.all_seeds else [cfg["seed"]]
-    ens_members = [m for m in bl["ensemble"] if m in models]
-    use_ens = not args.no_ensemble and len(ens_members) >= 2
+    # the ensemble is only built from its full member list, so "ENS" always
+    # means the same model; partial ensembles from earlier runs are dropped
+    ens_members = list(bl["ensemble"])
+    ens_tag = "+".join(ens_members)
+    use_ens = not args.no_ensemble and all(m in models for m in ens_members)
 
     done = set()
     if out_csv.exists():
         prev = pd.read_csv(out_csv)
+        rewrite = "members" not in prev.columns   # file from an older version
+        if rewrite:
+            prev["members"] = ""
+        stale = (prev["model"] == "ENS") & (prev["members"].fillna("") != ens_tag)
+        if stale.any():
+            print(f"Dropping {int(stale.sum())} ensemble rows built from a different member list.")
+            prev = prev[~stale]
+        if rewrite or stale.any():
+            prev.to_csv(out_csv, index=False)
         done = set(map(tuple, prev[KEYS].astype(str).values))
 
     # common feature list across all datasets
@@ -81,16 +105,16 @@ def main() -> None:
             for src in sources:
                 tr = splits[src][0]
                 fitted = {}
+                ens_pending = use_ens and any((str(seed), fs, src, t, "ENS") not in done for t in keys)
                 for m in models + (["ENS"] if use_ens else []):
                     todo = [t for t in keys if (str(seed), fs, src, t, m) not in done]
-                    if not todo:
+                    # an ensemble member whose own rows are done is still refitted
+                    # (not re-recorded) when the ensemble itself is pending
+                    refit_only = not todo and ens_pending and m in ens_members
+                    if not todo and not refit_only:
                         continue
                     t0 = time.time()
                     if m == "ENS":
-                        missing = [e for e in ens_members if e not in fitted]
-                        if missing:
-                            print(f"  [skip ENS] members not fitted this run: {missing}")
-                            continue
                         model = SoftVotingEnsemble({e: fitted[e] for e in ens_members})
                         fit_s = sum(fitted[e].fit_seconds_ for e in ens_members)
                     else:
@@ -100,17 +124,20 @@ def main() -> None:
                         fit_s = time.time() - t0
                         model.fit_seconds_ = fit_s
                         fitted[m] = model
+                        if refit_only:
+                            print(f"seed={seed} {fs} {src:>8} {m:>4} refitted for ENS ({fit_s:.1f}s)")
+                            continue
                     rows = []
                     for tgt in todo:
                         te = tests[tgt]
                         p = model.predict_proba(te[feats].to_numpy("float32"))[:, 1]
                         r = {"seed": seed, "feature_set": fs, "source": src, "target": tgt,
                              "model": m, "n_train": len(tr) if m == "ENS" else len(trc),
-                             "n_test": len(te), "fit_seconds": round(fit_s, 2)}
+                             "n_test": len(te), "fit_seconds": round(fit_s, 2),
+                             "members": ens_tag if m == "ENS" else ""}
                         r.update(binary_metrics(te[LABEL_COL].to_numpy(), p))
                         rows.append(r)
-                    pd.DataFrame(rows).to_csv(out_csv, mode="a", index=False,
-                                              header=not out_csv.exists())
+                    append_rows(out_csv, rows)
                     f1s = " ".join(f"{x['target']}={x['f1']:.3f}" for x in rows)
                     print(f"seed={seed} {fs} {src:>8} {m:>4} fit={fit_s:6.1f}s  F1: {f1s}")
                 # fitted models of models not re-run this time are unavailable

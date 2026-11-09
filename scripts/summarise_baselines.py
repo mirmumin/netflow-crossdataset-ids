@@ -40,6 +40,19 @@ def main(results_dir: str | None = None) -> None:
     t3 = cross.groupby(["feature_set", "model"])[METRICS].mean().round(4)
     t3.to_csv(res / "table_cross_summary.csv")
 
+    # Supervisor's format: one table per dataset, rows = models, metrics in %
+    order = ["RF", "XGB", "SVM", "LR", "KNN", "ENS"]
+    cols = ["accuracy", "precision", "recall", "f1", "specificity"]
+    md = []
+    for (fs, src), g in ind.groupby(["feature_set", "source"]):
+        t = (g.groupby("model")[cols].mean() * 100).round(2)
+        t = t.reindex([m for m in order if m in t.index])
+        t.columns = ["Accuracy (%)", "Precision (%)", "Recall (%)", "F1 (%)", "Specificity (%)"]
+        t.index = [{"ENS": "Ensemble (soft voting)", "XGB": "XGBoost"}.get(m, m) for m in t.index]
+        t.to_csv(res / f"table_models_{fs}_{src}.csv")
+        md.append(f"### {src} ({fs} features), in-dataset\n\n" + t.to_markdown() + "\n")
+    (res / "table_models.md").write_text("\n".join(md))
+    print("\n".join(md))
     print("In-dataset (mean ± SD):\n", t1.head(20).to_string())
     print("\nCross-dataset mean over 12 pairs:\n", t3.to_string())
 

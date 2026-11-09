@@ -64,7 +64,12 @@ def test_baselines_and_summary_on_toy_data(tmp_path):
            "--results-dir", str(res), "--models", "LR", "KNN", "--feature-sets", "v3"]
     subprocess.run(cmd, cwd=ROOT, check=True)
     df = pd.read_csv(res / "baselines_raw.csv")
-    assert len(df) == 4 * 4 * 3                     # 4 sources x 4 targets x (LR, KNN, ENS)
+    assert len(df) == 4 * 4 * 2                     # no ENS: not all members requested
+    cmd = cmd[:-4] + ["--models", "RF", "XGB", "LR", "SVM", "KNN", "--feature-sets", "v3"]
+    subprocess.run(cmd, cwd=ROOT, check=True)       # LR/KNN refitted only for ENS
+    df = pd.read_csv(res / "baselines_raw.csv")
+    assert len(df) == 4 * 4 * 6
+    assert (df.loc[df.model == "ENS", "members"] == "RF+XGB+LR+SVM+KNN").all()
     assert {"accuracy", "precision", "recall", "f1", "specificity"} <= set(df.columns)
     subprocess.run(cmd, cwd=ROOT, check=True)       # resume: nothing re-run
     assert len(pd.read_csv(res / "baselines_raw.csv")) == len(df)
