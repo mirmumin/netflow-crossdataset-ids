@@ -44,3 +44,11 @@ fusion:
   max_test: 20000           # target test rows (TabPFN inference cost)
   learner: tabpfn           # few-shot learner; "rf" is a CPU stand-in for testing only
   tabpfn_version: v2        # v2 weights are not gated; "default" needs TABPFN_TOKEN
+
+benign_only:                # target network has ONLY k labelled benign flows
+  budgets: [100, 1000]
+  n_source_attacks: 1000    # source attack flows put in TabPFN's context
+  max_source_train: 400000
+  max_test: 20000
+  learner: tabpfn
+  tabpfn_version: v2

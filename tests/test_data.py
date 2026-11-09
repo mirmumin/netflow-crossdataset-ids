@@ -100,3 +100,15 @@ def test_report_builds(tmp_path):
                    cwd=ROOT, check=True)
     subprocess.run([sys.executable, "scripts/make_report.py", str(res)], cwd=ROOT, check=True)
     assert (res / "report.docx").stat().st_size > 10_000
+
+
+def test_benign_only_pipeline_with_rf_standin(tmp_path):
+    raw, proc, res = tmp_path / "raw", tmp_path / "proc", tmp_path / "res"
+    subprocess.run([sys.executable, "scripts/make_toy_data.py", str(raw)], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/prepare_data.py", "--raw-dir", str(raw),
+                    "--out-dir", str(proc), "--n-rows", "2000"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/run_benign_only.py", "--processed-dir", str(proc),
+                    "--results-dir", str(res), "--learner", "rf", "--budgets", "100",
+                    "--targets", "toniot"], cwd=ROOT, check=True)
+    df = pd.read_csv(res / "benign_only_raw_rf.csv")
+    assert set(df["method"]) == {"XGB-src", "IForest-k", "XGB-pool-k", "Fusion-B-k"}

@@ -136,6 +136,31 @@ def main(results_dir: str | None = None) -> None:
         doc.add_paragraph(f"Seeds used: {n_seeds}. "
                           + ("Single-seed demo; final paper numbers need --all-seeds." if n_seeds == 1 else ""))
 
+    bo = res / "benign_only_raw.csv"
+    if bo.exists():
+        b = pd.read_csv(bo)
+        names = {"XGB-src": "XGBoost, source only (zero-shot)",
+                 "IForest-k": "Isolation Forest, target benign only",
+                 "XGB-pool-k": "XGBoost, source + target benign (pooled)",
+                 "Fusion-B-k": "Fusion-B (proposed)"}
+        order = list(names)
+        doc.add_heading("4. Realistic setting: target has only benign labels", 1)
+        doc.add_paragraph(
+            "The target network has k labelled BENIGN flows and no labelled attacks; attack "
+            "knowledge must come from the other three networks. Fusion-B: TabPFN context = target "
+            "benign flows + source attack flows, with the source XGBoost score and a target "
+            "anomaly score as extra features. Values in %.")
+        for tgt in [k for k in NAMES if k in set(b.target)]:
+            t = (b[b.target == tgt].groupby(["budget", "method"])
+                 [["f1", "balanced_accuracy", "recall", "specificity"]].mean() * 100).reset_index()
+            t["o"] = t.method.map({m: i for i, m in enumerate(order)})
+            t = t.sort_values(["budget", "o"])
+            t.index = [names.get(m, m) + (f", k={k}" if k else "") for k, m in zip(t.budget, t.method)]
+            t = t[["f1", "balanced_accuracy", "recall", "specificity"]]
+            t.columns = ["F1", "Bal. accuracy", "Recall", "Specificity"]
+            doc.add_heading(f"Target: {NAMES[tgt]}", 2)
+            add_table(doc, t, "Method", bold_max_cols=["F1", "Bal. accuracy"])
+
     out = res / "report.docx"
     doc.save(out)
     print(f"Wrote {out}")
