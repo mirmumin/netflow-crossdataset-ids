@@ -57,6 +57,7 @@ def main() -> None:
     ap.add_argument("--no-ensemble", action="store_true")
     args = ap.parse_args()
 
+    # ---- 1. Settings: read configs/default.yaml, command-line flags override it ----
     cfg = load_config()
     bl = cfg["baselines"]
     proc = resolve(args.processed_dir or cfg["paths"]["processed_dir"])
@@ -64,6 +65,7 @@ def main() -> None:
     res_dir.mkdir(parents=True, exist_ok=True)
     out_csv = res_dir / "baselines_raw.csv"
 
+    # ---- 2. Load the subsampled datasets made by prepare_data.py ----
     keys = [k for k in cfg["datasets"] if (proc / f"{k}.parquet").exists()]
     if not keys:
         raise SystemExit(f"No processed parquet files in {proc}. Run prepare_data.py first.")
@@ -78,6 +80,8 @@ def main() -> None:
     ens_tag = "+".join(ens_members)
     use_ens = not args.no_ensemble and all(m in models for m in ens_members)
 
+    # ---- 3. Resume support: remember which (seed, features, source, target, model)
+    #         rows are already in the results file so they are not run again ----
     done = set()
     if out_csv.exists():
         prev = pd.read_csv(out_csv)
@@ -96,13 +100,15 @@ def main() -> None:
     cols = set.intersection(*(set(d.columns) for d in data.values()))
     fs_all = feature_sets([c for c in next(iter(data.values())).columns if c in cols])
 
+    # ---- 4. Main loop ----
     for seed in seeds:
         set_seed(seed)
+        # 80/20 train/test split of EVERY dataset (same seed -> same split for all models)
         splits = {k: split(d, cfg["split"]["test_size"], seed) for k, d in data.items()}
         tests = {k: cap(te, bl["max_test"], seed) for k, (_, te) in splits.items()}
         for fs in fsets:
             feats = fs_all[fs]
-            for src in sources:
+            for src in sources:                      # SOURCE = the network we train on
                 tr = splits[src][0]
                 fitted = {}
                 ens_pending = use_ens and any((str(seed), fs, src, t, "ENS") not in done for t in keys)
@@ -127,6 +133,8 @@ def main() -> None:
                         if refit_only:
                             print(f"seed={seed} {fs} {src:>8} {m:>4} refitted for ENS ({fit_s:.1f}s)")
                             continue
+                    # test the trained model on the test split of every network:
+                    # target == source -> in-dataset; target != source -> cross-dataset
                     rows = []
                     for tgt in todo:
                         te = tests[tgt]
@@ -137,7 +145,7 @@ def main() -> None:
                              "members": ens_tag if m == "ENS" else ""}
                         r.update(binary_metrics(te[LABEL_COL].to_numpy(), p))
                         rows.append(r)
-                    append_rows(out_csv, rows)
+                    append_rows(out_csv, rows)          # saved immediately (safe to interrupt)
                     f1s = " ".join(f"{x['target']}={x['f1']:.3f}" for x in rows)
                     print(f"seed={seed} {fs} {src:>8} {m:>4} fit={fit_s:6.1f}s  F1: {f1s}")
                 # fitted models of models not re-run this time are unavailable

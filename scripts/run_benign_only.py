@@ -57,6 +57,7 @@ def main() -> None:
     ap.add_argument("--all-seeds", action="store_true")
     args = ap.parse_args()
 
+    # ---- 1. Settings ----
     cfg = load_config()
     bc = cfg["benign_only"]
     budgets = args.budgets or bc["budgets"]
@@ -99,6 +100,7 @@ def main() -> None:
             if not todo and (str(seed), tgt, "0", "XGB-src") in done:
                 continue
 
+            # ---- 2. Source model: XGBoost on the other three networks (has attack labels) ----
             per = bc["max_source_train"] // len(src_list)
             src_tr = pd.concat([cap(splits[s][0], per, seed) for s in src_list])
             X_src, y_src = to_matrix(src_tr, feats), src_tr[LABEL_COL].to_numpy()
@@ -109,6 +111,7 @@ def main() -> None:
             if (str(seed), tgt, "0", "XGB-src") not in done:
                 record("XGB-src", 0, p_src_te, t_src)
 
+            # ---- 3. Target side: only k BENIGN flows are labelled ----
             benign_pool = tr_t[tr_t[LABEL_COL] == 0]
             for k in todo:
                 ben = benign_pool.sample(n=min(k, len(benign_pool)), random_state=seed)
