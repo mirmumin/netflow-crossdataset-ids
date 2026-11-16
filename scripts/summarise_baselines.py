@@ -1,4 +1,4 @@
-"""Make the paper tables from results/baselines_raw.csv.
+"""Step 3 (tables): make the paper tables from results/baselines_raw.csv.
 
 Writes:
   results/table_in_dataset.csv   mean +/- SD per model (source == target)

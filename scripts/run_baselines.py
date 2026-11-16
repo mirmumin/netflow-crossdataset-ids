@@ -1,4 +1,4 @@
-"""Step 2: classical baselines, in-dataset and 4x4 cross-dataset.
+"""Step 3: classical baselines, in-dataset and 4x4 cross-dataset.
 
 For each seed, feature set (v2 / v3) and SOURCE dataset:
   * split every dataset 80/20 (stratified on attack class, same seed)

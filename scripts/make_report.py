@@ -1,4 +1,4 @@
-"""Build a Word report (results/report.docx) from whatever results exist.
+"""Step 7: build a Word report (results/report.docx) from whatever results exist.
 
 Sections are added only for result files that are present, so it can be run
 after the baselines alone, or again after the fusion run.
@@ -29,7 +29,7 @@ FUSION_ORDER = ["XGB-src", "XGB-k", "TabPFN-k", "Fusion-k"]
 FUSION_NAMES = {"XGB-src": "XGBoost, source only (zero-shot)",
                 "XGB-k": "XGBoost, target labels only",
                 "TabPFN-k": "TabPFN, target labels only",
-                "Fusion-k": "Fusion (proposed)"}
+                "Fusion-k": "Fusion (few-shot)"}
 
 
 def add_table(doc, df: pd.DataFrame, index_name: str = "", bold_max_cols=None, fmt="{:.2f}"):
@@ -144,9 +144,9 @@ def main(results_dir: str | None = None) -> None:
         names = {"XGB-src": "XGBoost, source only",
                  "IForest-k": "Isolation Forest, target benign only",
                  "XGB-pool-k": "XGBoost, source + target benign (pooled)",
-                 "Fusion-B-k": "Fusion-B (raw features)",
+                 "Fusion-B-k": "Fusion-B (proposed)",
                  "XGB-src-BQN-k": "XGBoost, source only, benign-aligned features",
-                 "Fusion-B-v2-k": "Fusion-B v2, aligned features (proposed)"}
+                 "Fusion-B-v2-k": "Fusion-B v2 (proposed, benign-aligned features)"}
         order = list(names)
         doc.add_heading("4. Realistic setting: target has only benign labels", 1)
         doc.add_paragraph(

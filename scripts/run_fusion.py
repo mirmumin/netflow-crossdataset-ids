@@ -1,11 +1,11 @@
-"""Step 3: proposed Fusion model vs few-shot and zero-shot baselines.
+"""Step 4: few-shot Fusion model vs few-shot and zero-shot baselines.
 
 For every TARGET network, label budget k and seed, compare on the same
 target test flows:
   XGB-src      XGBoost trained on the source network(s), no target labels (zero-shot)
   XGB-k        XGBoost trained only on the k labelled target flows
   TabPFN-k     TabPFN on the k labelled target flows
-  Fusion-k     TabPFN on the k target flows + source XGBoost score as a feature (proposed)
+  Fusion-k     TabPFN on the k target flows + source XGBoost score as a feature
 
 Mode "loo" (default): source = the other three networks (leave-one-network-out).
 Mode "pair": every source -> target pair separately (12 pairs).
@@ -142,7 +142,7 @@ def main() -> None:
                     record("TabPFN-k" if learner == "tabpfn" else f"{learner}-k", k,
                            predict_proba_chunked(m, Z_te), time.time() - t0)
 
-                    # proposed: + source model's attack score as an extra feature
+                    # fusion: + source model's attack score as an extra feature
                     s_l = logit(xgb_src.predict_proba(X_l)[:, 1])[:, None]
                     s_te = logit(p_src_te)[:, None]
                     t0 = time.time()

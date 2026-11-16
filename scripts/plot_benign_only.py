@@ -1,4 +1,4 @@
-"""Paper figures for the benign-only setting (threshold rule benign-q95).
+"""Step 6: paper figures for the benign-only setting (threshold rule benign-q95).
 
 One figure per metric (F1, AUROC): a panel per target network, grouped bars
 for k = 100 and k = 1000, one bar per method, error bar = SD over seeds.
@@ -23,7 +23,7 @@ from src.utils import load_config, resolve  # noqa: E402
 
 METHODS = [("IForest-k", "IForest (target only)", "#9e9e9e"),
            ("XGB-pool-k", "XGB-pool", "#6baed6"),
-           ("Fusion-B-k", "Fusion-B", "#fd8d3c"),
+           ("Fusion-B-k", "Fusion-B (proposed)", "#fd8d3c"),
            ("Fusion-B-v2-k", "Fusion-B v2 (proposed)", "#d62728")]
 TARGETS = [("unsw", "UNSW-NB15"), ("toniot", "ToN-IoT"), ("botiot", "BoT-IoT"), ("cic2018", "CSE-CIC-IDS2018")]
 

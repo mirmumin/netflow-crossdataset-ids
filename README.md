@@ -1,17 +1,26 @@
-# Cross-dataset generalisation of ML-based intrusion detection on NetFlow v3
+# Cross-network intrusion detection on NetFlow v3
 
-Code for the thesis/paper *Do Temporal Features and Tabular Foundation Models
-Close the Cross-Network Generalisation Gap? A 4×4 Benchmark on NetFlow v3
-Intrusion Detection Datasets*.
+Code for the thesis/paper on **cross-network generalisation of ML-based
+network intrusion detection** on the four NetFlow v3 datasets, and on a
+source-informed in-context learner (**Fusion-B**) for a new network that has
+only benign labels.
 
-Every table and figure in the paper is produced by the scripts in this
-repository with fixed random seeds (`configs/default.yaml`).
+Every table and figure is produced by the scripts in this repository with
+fixed random seeds (`configs/default.yaml`).
 
 ## Research questions
 1. How well do models trained on one network detect attacks on another (all 12 source→target pairs of 4 datasets)?
-2. Do the NetFlow v3 temporal features help or hurt transfer compared with the 43 v2 features?
-3. With only 0 / 100 / 1,000 labelled flows from the target network, do tabular foundation models (TabPFN, TabICL) beat XGBoost?
-4. Which features act as dataset-specific shortcuts (SHAP), and does removing them improve transfer?
+2. With only k = 100 / 1,000 labelled target flows, does source knowledge help a tabular foundation model (TabPFN) beyond target-only training?
+3. When the target network has **only benign labels**, can source attack knowledge plus TabPFN beat target-only anomaly detection and zero-shot transfer? (main contribution)
+4. Do the NetFlow v3 temporal features help or hurt transfer compared with the v2 features?
+
+## Main results (seed 42 for steps 3-4, 5 seeds for step 5)
+| Setting | Finding |
+|---|---|
+| In-dataset baselines | F1 84-100% (XGBoost/RF best) |
+| Cross-dataset baselines | mean F1 18-33%, AUROC ≈ 0.5: a large generalisation gap |
+| Few-shot fusion (k labelled target flows) | Fusion ≈ TabPFN-k ≈ XGB-k; target labels alone suffice |
+| Benign-only target (proposed Fusion-B) | mean F1 0.57-0.61 vs 0.25 (IForest) and 0.13 (zero-shot XGBoost); Wilcoxon p < 0.001 |
 
 ## Data
 Four NetFlow v3 datasets from the University of Queensland
@@ -19,73 +28,80 @@ Four NetFlow v3 datasets from the University of Queensland
 
 | Key | Dataset | Flows | Attack % |
 |---|---|---|---|
-| `toniot` | NF-ToN-IoT-v3 | 27,520,260 | 38.98 |
-| `cic2018` | NF-CSE-CIC-IDS2018-v3 | 20,115,529 | 12.93 |
-| `botiot` | NF-BoT-IoT-v3 | 16,993,808 | 99.7 |
 | `unsw` | NF-UNSW-NB15-v3 | 2,365,424 | 5.4 |
+| `toniot` | NF-ToN-IoT-v3 | 27,520,260 | 38.98 |
+| `botiot` | NF-BoT-IoT-v3 | 16,993,808 | 99.7 |
+| `cic2018` | NF-CSE-CIC-IDS2018-v3 | 20,115,529 | 12.93 |
 
 Licence: free for academic research when the dataset papers are cited;
-commercial use needs the authors' permission.
+commercial use needs the authors' permission. Raw data is not committed.
 
-**Download:** open the page above, NetFlow V3 tab, and download the four zips from UQ Research Data Manager. Unzip them and copy the four folders (`NF-UNSW-NB15-v3`, `NF-ToN-IoT-v3`, `NF-BoT-IoT-v3`, `NF-CICIDS2018-v3`) into `data/raw/` as they are; `configs/default.yaml` finds the CSV inside each folder.
+**Download:** on the page above (NetFlow V3 tab) download the four zips from
+UQ Research Data Manager and put them, or the unzipped folders
+(`NF-UNSW-NB15-v3`, `NF-ToN-IoT-v3`, `NF-BoT-IoT-v3`, `NF-CICIDS2018-v3`), in
+`data/raw/` (locally) or `MyDrive/thesis_data/` (Colab).
 
-## Setup
+## Quick start
+
+### Google Colab (recommended)
+Open **`notebooks/00_colab_setup.ipynb`** in Colab with a T4 GPU and run it
+top to bottom. It runs Steps 0-7 below in order, explains each step, and
+writes all results to Google Drive so an interrupted session can resume.
+
+### Local
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+bash scripts/run_all.sh        # every step in order
 ```
-On Google Colab: open **`notebooks/00_colab_setup.ipynb`** and run it top to bottom. It runs every step in order (setup, data, EDA, baselines, fusion, benign-only, statistics and figures, Word report), explains each step in Bangla, and writes all results straight to Google Drive so an interrupted session can resume. Raw data is not committed to git.
 
-## Reproduce
+## Pipeline
+| Step | Script | Output (in `results/`) |
+|---|---|---|
+| 1 Data preparation | `scripts/prepare_data.py` | `data/processed/*.parquet`, `class_summary.csv` |
+| 2 EDA (distribution shift) | `notebooks/01_eda.ipynb` | `figures/ks_shift_heatmap.png` |
+| 3 Baselines (RF, XGB, SVM, LR, KNN, Ensemble), in- and cross-dataset | `scripts/run_baselines.py`, `scripts/summarise_baselines.py` | `baselines_raw.csv`, `table_models.md`, `table_cross_*.csv` |
+| 4 Few-shot fusion | `scripts/run_fusion.py` | `fusion_raw.csv`, `fusion_summary.csv` |
+| 5 Benign-only target, Fusion-B / Fusion-B v2 | `scripts/run_benign_only.py --all-seeds` | `benign_only_raw.csv`, `benign_only_summary.csv` |
+| 6 Wilcoxon tests and figures | `scripts/stats_benign_only.py`, `scripts/plot_benign_only.py` | `stats_benign_only.csv`, `figures/benign_only_*.png/.pdf` |
+| 7 Word report | `scripts/make_report.py` | `report.docx` |
+
+All experiment scripts append to their `*_raw.csv` and skip finished runs, so
+they can simply be restarted. `--all-seeds` uses the 5 seeds in the config.
+
+### Proposed method: Fusion-B
+The target network has k labelled **benign** flows and no labelled attacks;
+the other three networks (leave-one-network-out) supply labelled attacks.
+TabPFN is given an in-context training set of the k target benign flows
+(label 0) and source attack flows (label 1), with two extra features: the
+score of an XGBoost trained on the source networks and an Isolation Forest
+anomaly score fitted on the target benign flows. Fusion-B v2 first maps each
+network's features to the quantiles of its own benign traffic (`src/align.py`).
+
+Leakage and fairness rules: the source attack flows in the context are held
+out from the source XGBoost; anomaly scores of the context flows are
+cross-fitted; every method is thresholded at the 95th percentile of its
+cross-fitted scores on the known benign flows (only benign labels are used).
+
+## Repository layout
+```
+configs/    default.yaml: seeds, paths, subsample sizes, model settings
+data/       raw/ (downloads) and processed/ (parquet); both git-ignored
+notebooks/  00_colab_setup.ipynb (full pipeline on Colab), 01_eda.ipynb
+src/        data.py, features.py, splits.py, models.py, evaluate.py, fusion.py, align.py, utils.py
+scripts/    one script per pipeline step; run_all.sh runs them all
+tests/      pytest checks on synthetic data (python scripts/make_toy_data.py)
+results/    result tables and figures (created by the scripts)
+```
+
+## Tests
 ```bash
-bash scripts/run_all.sh          # every step in order
-# or step by step:
-python scripts/prepare_data.py   # stratified subsample -> data/processed/*.parquet
-jupyter notebook notebooks/01_eda.ipynb
-python scripts/run_baselines.py  # RF, XGB, LR, SVM, KNN + soft-voting ensemble; in- and cross-dataset
-python scripts/summarise_baselines.py   # paper tables in results/
-python scripts/run_fusion.py     # few-shot Fusion vs XGB zero-shot / XGB-k / TabPFN-k (GPU)
-python scripts/run_benign_only.py --all-seeds   # benign-only target, proposed Fusion-B v2 (GPU)
-python scripts/make_report.py    # results/report.docx
-```
-**Proposed Fusion model:** XGBoost trained on the source network(s) scores
-every target flow; that score is added as a feature, and TabPFN (a pretrained
-tabular foundation model) is fitted on only k = 100 or 1,000 labelled target
-flows. Default mode is leave-one-network-out (source = the other three).
-
-**Benign-only target setting (main contribution):** the target network has only
-k benign labels. `python scripts/run_benign_only.py --all-seeds` compares XGB-src,
-IForest-k, XGB-pool-k, Fusion-B-k and the proposed **Fusion-B v2** (TabPFN with
-target benign + held-out source attack flows, on features aligned to each
-network's own benign traffic, `src/align.py`). Every method is thresholded at the
-95th percentile of its cross-fitted scores on the known benign flows.
-
-`run_baselines.py` appends to `results/baselines_raw.csv` and skips finished
-runs, so an interrupted Colab session can simply rerun it. Use `--all-seeds`
-for the final 5-seed numbers.
-
-Dry run without the real data:
-```bash
-python scripts/make_toy_data.py tests/toy_raw
-python scripts/prepare_data.py --raw-dir tests/toy_raw --out-dir /tmp/toy --n-rows 3000
-pytest -q
-```
-
-## Layout
-```
-configs/    experiment settings (seeds, paths, subsample size)
-data/       raw/ (downloads, git-ignored) and processed/ (parquet, git-ignored)
-notebooks/  analysis notebooks (EDA, figures)
-src/        reusable code: data.py, features.py, utils.py (+ models, transfer, few-shot later)
-scripts/    one script per experiment step; run_all.sh runs them all
-tests/      pytest checks on synthetic data
-results/    CSV result tables and figures used in the paper
-paper/      LaTeX source
+pytest -q        # runs the whole pipeline on small synthetic data (TabPFN replaced by RF)
 ```
 
 ## Reproducibility
-- Seeds fixed in `configs/default.yaml` (`seed: 42`; repeated runs over 5 seeds).
-- Package versions pinned in `requirements.txt`.
+- Seeds fixed in `configs/default.yaml` (`seed: 42`; `seeds: 42-46` for repeated runs).
+- Package versions pinned in `requirements.txt`; TabPFN uses the openly licensed v2 weights.
 - IP addresses, ports and absolute flow timestamps are dropped from all
   feature sets so models cannot memorise the testbed.
 

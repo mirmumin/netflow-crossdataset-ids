@@ -6,13 +6,12 @@ networks. Methods, all tested on the same target test flows:
 
   XGB-src         XGBoost trained on source networks (zero-shot)
   IForest-k       Isolation Forest fitted on the k target benign flows (anomaly detection, no source).
-                  A flow is called an attack if it is more anomalous than 95% of known benign flows.
   XGB-pool-k      XGBoost on source data + the k target benign flows (up-weighted)
-  Fusion-B-k      TabPFN whose context = k target benign flows (label 0) + source attack flows
+  Fusion-B-k      (proposed) TabPFN whose context = k target benign flows (label 0) + source attack flows
                   (label 1); extra features = source XGBoost score and target anomaly score
   XGB-src-BQN-k   XGBoost zero-shot, but every network's features are first aligned to its own
                   benign traffic (benign-anchored quantile normalisation, src/align.py)
-  Fusion-B-v2-k   Fusion-B on the aligned features  (proposed)
+  Fusion-B-v2-k   Fusion-B on the aligned features (proposed variant)
 
 Decision threshold. Every method gives a score; a flow is called an attack if
 its score is >= a threshold. Two rules are reported for every method (column "rule"):
@@ -251,7 +250,7 @@ def main() -> None:
                 b_bqn = oof(lambda tr, te: bqn(X_b[tr], X_b[te]))
                 record("XGB-src-BQN-k", k, p_bqn, t_al + time.time() - t0, benign_oof=b_bqn)
 
-                # 4f. Fusion-B v2 (proposed): Fusion-B on benign-aligned features
+                # 4f. Fusion-B v2 (proposed variant): Fusion-B on benign-aligned features
                 def fusion_v2(Xb, ab, Xe, ae):
                     al = BenignQuantileAligner(seed=seed).fit(Xb)
                     ctx = np.vstack([al.transform(Xb), X_att_al])

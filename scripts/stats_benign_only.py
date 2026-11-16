@@ -1,9 +1,9 @@
-"""Step 7: is Fusion-B v2 better than the other methods, or is it chance?
+"""Step 6: are the proposed methods (Fusion-B, Fusion-B v2) better than the others, or is it chance?
 
 Paired Wilcoxon signed-rank test on results/benign_only_raw.csv (threshold rule
 benign-q95). Each pair = one (target network, k, seed) run, so 4 x 2 x 5 = 40
-pairs with 5 seeds. For every other method we report:
-  wins / ties / losses of Fusion-B-v2, median difference, Wilcoxon p-value and
+pairs with 5 seeds. For each proposed method and every other method we report:
+  wins / ties / losses of the proposed method, median difference, Wilcoxon p-value and
   the Holm-corrected p-value (several comparisons are made at once).
 Done for F1 and AUROC, over all runs and separately for k = 100 and k = 1000.
 
@@ -23,7 +23,7 @@ from scipy.stats import wilcoxon
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.utils import load_config, resolve  # noqa: E402
 
-PROPOSED = "Fusion-B-v2-k"
+PROPOSED = ["Fusion-B-k", "Fusion-B-v2-k"]
 RULE = "benign-q95"
 
 
@@ -39,18 +39,18 @@ def holm(p):
     return adj
 
 
-def compare(df: pd.DataFrame, metric: str, subset: str) -> list[dict]:
+def compare(df: pd.DataFrame, metric: str, subset: str, proposed: str) -> list[dict]:
     wide = df.pivot_table(index=["target", "budget", "seed"], columns="method", values=metric)
     rows = []
-    for other in [m for m in wide.columns if m != PROPOSED]:
-        pair = wide[[PROPOSED, other]].dropna()
-        d = pair[PROPOSED] - pair[other]
+    for other in [m for m in wide.columns if m != proposed]:
+        pair = wide[[proposed, other]].dropna()
+        d = pair[proposed] - pair[other]
         nz = d[d.abs() > 1e-12]
         p = wilcoxon(nz).pvalue if len(nz) >= 2 else np.nan
-        rows.append({"metric": metric, "subset": subset, "vs": other, "n_pairs": len(d),
+        rows.append({"metric": metric, "subset": subset, "method": proposed, "vs": other, "n_pairs": len(d),
                      "wins": int((d > 1e-12).sum()), "ties": int((d.abs() <= 1e-12).sum()),
                      "losses": int((d < -1e-12).sum()),
-                     "mean_proposed": pair[PROPOSED].mean(), "mean_other": pair[other].mean(),
+                     "mean_method": pair[proposed].mean(), "mean_other": pair[other].mean(),
                      "median_diff": d.median(), "p": p})
     adj = holm([r["p"] if not np.isnan(r["p"]) else 1.0 for r in rows])
     for r, a in zip(rows, adj):
@@ -63,14 +63,15 @@ def main(results_dir: str | None = None) -> None:
     df = pd.read_csv(res / "benign_only_raw.csv")
     df = df[(df["rule"] == RULE) & (df["budget"] > 0)]
     rows = []
-    for metric in ["f1", "auroc"]:
-        rows += compare(df, metric, "all k")
-        for k in sorted(df["budget"].unique()):
-            rows += compare(df[df["budget"] == k], metric, f"k={k}")
+    for proposed in PROPOSED:
+        for metric in ["f1", "auroc"]:
+            rows += compare(df, metric, "all k", proposed)
+            for k in sorted(df["budget"].unique()):
+                rows += compare(df[df["budget"] == k], metric, f"k={k}", proposed)
     out = pd.DataFrame(rows).round(4)
     out.to_csv(res / "stats_benign_only.csv", index=False)
     pd.set_option("display.width", 200)
-    print(f"{PROPOSED} vs others, paired Wilcoxon (rule {RULE}, seeds={df.seed.nunique()})\n")
+    print(f"Proposed methods vs others, paired Wilcoxon (rule {RULE}, seeds={df.seed.nunique()})\n")
     print(out.to_string(index=False))
     print(f"\nWrote {res / 'stats_benign_only.csv'}")
 
