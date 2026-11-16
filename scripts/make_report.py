@@ -1,4 +1,4 @@
-"""Build a Word report (results/report.docx) from whatever results exist.
+"""Step 7: build a Word report (results/report.docx) from whatever results exist.
 
 Sections are added only for result files that are present, so it can be run
 after the baselines alone, or again after the fusion run.
@@ -29,7 +29,7 @@ FUSION_ORDER = ["XGB-src", "XGB-k", "TabPFN-k", "Fusion-k"]
 FUSION_NAMES = {"XGB-src": "XGBoost, source only (zero-shot)",
                 "XGB-k": "XGBoost, target labels only",
                 "TabPFN-k": "TabPFN, target labels only",
-                "Fusion-k": "Fusion (proposed)"}
+                "Fusion-k": "Fusion (few-shot)"}
 
 
 def add_table(doc, df: pd.DataFrame, index_name: str = "", bold_max_cols=None, fmt="{:.2f}"):
@@ -139,25 +139,33 @@ def main(results_dir: str | None = None) -> None:
     bo = res / "benign_only_raw.csv"
     if bo.exists():
         b = pd.read_csv(bo)
-        names = {"XGB-src": "XGBoost, source only (zero-shot)",
+        if "rule" in b.columns:
+            b = b[b.rule == "benign-q95"]
+        names = {"XGB-src": "XGBoost, source only",
                  "IForest-k": "Isolation Forest, target benign only",
                  "XGB-pool-k": "XGBoost, source + target benign (pooled)",
-                 "Fusion-B-k": "Fusion-B (proposed)"}
+                 "Fusion-B-k": "Fusion-B (proposed)",
+                 "XGB-src-BQN-k": "XGBoost, source only, benign-aligned features",
+                 "Fusion-B-v2-k": "Fusion-B v2 (proposed, benign-aligned features)"}
         order = list(names)
         doc.add_heading("4. Realistic setting: target has only benign labels", 1)
         doc.add_paragraph(
             "The target network has k labelled BENIGN flows and no labelled attacks; attack "
             "knowledge must come from the other three networks. Fusion-B: TabPFN context = target "
             "benign flows + source attack flows, with the source XGBoost score and a target "
-            "anomaly score as extra features. Values in %.")
+            "anomaly score as extra features; v2 first aligns every network's features to the "
+            "quantiles of its own benign traffic. Source attacks in the context are held out from "
+            "the source XGBoost. Every method uses the same threshold rule: a flow is an attack if "
+            "its score is above the 95th percentile of the method's cross-fitted scores on the k "
+            "known benign target flows (benign labels only). Values in %.")
         for tgt in [k for k in NAMES if k in set(b.target)]:
             t = (b[b.target == tgt].groupby(["budget", "method"])
-                 [["f1", "balanced_accuracy", "recall", "specificity"]].mean() * 100).reset_index()
+                 [["f1", "balanced_accuracy", "recall", "specificity", "auroc"]].mean() * 100).reset_index()
             t["o"] = t.method.map({m: i for i, m in enumerate(order)})
             t = t.sort_values(["budget", "o"])
             t.index = [names.get(m, m) + (f", k={k}" if k else "") for k, m in zip(t.budget, t.method)]
-            t = t[["f1", "balanced_accuracy", "recall", "specificity"]]
-            t.columns = ["F1", "Bal. accuracy", "Recall", "Specificity"]
+            t = t[["f1", "balanced_accuracy", "recall", "specificity", "auroc"]]
+            t.columns = ["F1", "Bal. accuracy", "Recall", "Specificity", "AUROC"]
             doc.add_heading(f"Target: {NAMES[tgt]}", 2)
             add_table(doc, t, "Method", bold_max_cols=["F1", "Bal. accuracy"])
 

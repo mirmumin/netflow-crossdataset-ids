@@ -48,6 +48,7 @@ def main() -> None:
     ap.add_argument("--n-rows", type=int, default=None)
     args = ap.parse_args()
 
+    # read settings (subsample size, paths) from configs/default.yaml
     cfg = load_config(args.config) if args.config else load_config()
     set_seed(cfg["seed"])
     raw_dir = resolve(args.raw_dir or cfg["paths"]["raw_dir"])
@@ -60,6 +61,7 @@ def main() -> None:
     for key, d in cfg["datasets"].items():
         if args.only and key not in args.only:
             continue
+        # find the dataset CSV inside data/raw/<folder>/ (zip layout from UQ)
         csv = find_csv(raw_dir, d["file"])
         if csv is None:
             continue

@@ -1,11 +1,11 @@
-"""Step 3: proposed Fusion model vs few-shot and zero-shot baselines.
+"""Step 4: few-shot Fusion model vs few-shot and zero-shot baselines.
 
 For every TARGET network, label budget k and seed, compare on the same
 target test flows:
   XGB-src      XGBoost trained on the source network(s), no target labels (zero-shot)
   XGB-k        XGBoost trained only on the k labelled target flows
   TabPFN-k     TabPFN on the k labelled target flows
-  Fusion-k     TabPFN on the k target flows + source XGBoost score as a feature (proposed)
+  Fusion-k     TabPFN on the k target flows + source XGBoost score as a feature
 
 Mode "loo" (default): source = the other three networks (leave-one-network-out).
 Mode "pair": every source -> target pair separately (12 pairs).
@@ -61,6 +61,7 @@ def main() -> None:
     ap.add_argument("--all-seeds", action="store_true")
     args = ap.parse_args()
 
+    # ---- 1. Settings ----
     cfg = load_config()
     fc = cfg["fusion"]
     mode = args.mode or fc["mode"]
@@ -82,6 +83,7 @@ def main() -> None:
     if out_csv.exists():
         done = set(map(tuple, pd.read_csv(out_csv)[KEYS].astype(str).values))
 
+    # ---- 2. Main loop: for each TARGET network ----
     for seed in seeds:
         set_seed(seed)
         splits = {k: split(d, cfg["split"]["test_size"], seed) for k, d in data.items()}
@@ -111,7 +113,7 @@ def main() -> None:
                 if not need_src:
                     continue
 
-                # 1) source XGBoost (equal share of rows from each source network)
+                # ---- 2a. Train XGBoost on the SOURCE network(s) (equal share of rows each) ----
                 t0 = time.time()
                 per = fc["max_source_train"] // len(src_list)
                 src_tr = pd.concat([cap(splits[s][0], per, seed) for s in src_list])
@@ -122,22 +124,25 @@ def main() -> None:
                 if (str(seed), mode, src, tgt, "0", "XGB-src") not in done:
                     record("XGB-src", 0, p_src_te, t_src)
 
+                # ---- 2b. For each label budget k: pretend only k target flows are labelled ----
                 for k in todo_budgets:
                     lab = sample_labelled(tr_t, k, seed)
                     X_l, y_l = to_matrix(lab, feats), lab[LABEL_COL].to_numpy()
 
+                    # baseline: XGBoost trained on the k target labels only
                     t0 = time.time()
                     xgb_k = make_model("XGB", seed).fit(X_l, y_l)
                     record("XGB-k", k, xgb_k.predict_proba(X_te)[:, 1], time.time() - t0)
 
-                    # features are already log1p-transformed (to_matrix); TabPFN needs no scaling
+                    # baseline: TabPFN on the k target labels only
+                    # (features are already log1p-transformed by to_matrix; TabPFN needs no scaling)
                     Z_l, Z_te = X_l, X_te
                     t0 = time.time()
                     m = make_fewshot_learner(learner, seed, fc["tabpfn_version"]).fit(Z_l, y_l)
                     record("TabPFN-k" if learner == "tabpfn" else f"{learner}-k", k,
                            predict_proba_chunked(m, Z_te), time.time() - t0)
 
-                    # proposed: + source model's attack score as an extra feature
+                    # fusion: + source model's attack score as an extra feature
                     s_l = logit(xgb_src.predict_proba(X_l)[:, 1])[:, None]
                     s_te = logit(p_src_te)[:, None]
                     t0 = time.time()
