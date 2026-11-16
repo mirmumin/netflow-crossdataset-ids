@@ -34,7 +34,7 @@ commercial use needs the authors' permission.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
-On Google Colab: open **`notebooks/thesis_pipeline.ipynb`** and run it top to bottom. It runs every step in order (setup, data, EDA, baselines, fusion, benign-only, Word report), explains each step in Bangla, and writes all results straight to Google Drive so an interrupted session can resume. (`00_colab_setup.ipynb` is the older setup-only notebook.) Raw data is not committed to git.
+On Google Colab: open **`notebooks/00_colab_setup.ipynb`** and run it top to bottom. It runs every step in order (setup, data, EDA, baselines, fusion, benign-only, statistics and figures, Word report), explains each step in Bangla, and writes all results straight to Google Drive so an interrupted session can resume. Raw data is not committed to git.
 
 ## Reproduce
 ```bash
