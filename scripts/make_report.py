@@ -136,10 +136,12 @@ def main(results_dir: str | None = None) -> None:
         doc.add_paragraph(f"Seeds used: {n_seeds}. "
                           + ("Single-seed demo; final paper numbers need --all-seeds." if n_seeds == 1 else ""))
 
-    bo = res / "benign_only_v2_raw.csv"
+    bo = res / "benign_only_raw.csv"
     if bo.exists():
         b = pd.read_csv(bo)
-        names = {"XGB-src": "XGBoost, source only (zero-shot)",
+        if "rule" in b.columns:
+            b = b[b.rule == "benign-q95"]
+        names = {"XGB-src": "XGBoost, source only",
                  "IForest-k": "Isolation Forest, target benign only",
                  "XGB-pool-k": "XGBoost, source + target benign (pooled)",
                  "Fusion-B-k": "Fusion-B (raw features)",
@@ -153,16 +155,17 @@ def main(results_dir: str | None = None) -> None:
             "benign flows + source attack flows, with the source XGBoost score and a target "
             "anomaly score as extra features; v2 first aligns every network's features to the "
             "quantiles of its own benign traffic. Source attacks in the context are held out from "
-            "the source XGBoost, and Isolation Forest flags flows above the 95th percentile of "
-            "benign anomaly scores. Values in %.")
+            "the source XGBoost. Every method uses the same threshold rule: a flow is an attack if "
+            "its score is above the 95th percentile of the method's cross-fitted scores on the k "
+            "known benign target flows (benign labels only). Values in %.")
         for tgt in [k for k in NAMES if k in set(b.target)]:
             t = (b[b.target == tgt].groupby(["budget", "method"])
-                 [["f1", "balanced_accuracy", "recall", "specificity"]].mean() * 100).reset_index()
+                 [["f1", "balanced_accuracy", "recall", "specificity", "auroc"]].mean() * 100).reset_index()
             t["o"] = t.method.map({m: i for i, m in enumerate(order)})
             t = t.sort_values(["budget", "o"])
             t.index = [names.get(m, m) + (f", k={k}" if k else "") for k, m in zip(t.budget, t.method)]
-            t = t[["f1", "balanced_accuracy", "recall", "specificity"]]
-            t.columns = ["F1", "Bal. accuracy", "Recall", "Specificity"]
+            t = t[["f1", "balanced_accuracy", "recall", "specificity", "auroc"]]
+            t.columns = ["F1", "Bal. accuracy", "Recall", "Specificity", "AUROC"]
             doc.add_heading(f"Target: {NAMES[tgt]}", 2)
             add_table(doc, t, "Method", bold_max_cols=["F1", "Bal. accuracy"])
 
