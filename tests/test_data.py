@@ -110,5 +110,31 @@ def test_benign_only_pipeline_with_rf_standin(tmp_path):
     subprocess.run([sys.executable, "scripts/run_benign_only.py", "--processed-dir", str(proc),
                     "--results-dir", str(res), "--learner", "rf", "--budgets", "100",
                     "--targets", "toniot"], cwd=ROOT, check=True)
-    df = pd.read_csv(res / "benign_only_raw_rf.csv")
-    assert set(df["method"]) == {"XGB-src", "IForest-k", "XGB-pool-k", "Fusion-B-k"}
+    df = pd.read_csv(res / "benign_only_v2_raw_rf.csv")
+    assert set(df["method"]) == {"XGB-src", "IForest-k", "XGB-pool-k", "Fusion-B-k",
+                                 "XGB-src-BQN-k", "Fusion-B-v2-k"}
+
+
+def test_benign_quantile_aligner_centres_benign():
+    import numpy as np
+    from src.align import BenignQuantileAligner
+    rng = np.random.default_rng(0)
+    ben = rng.normal(10, 2, size=(500, 3))
+    al = BenignQuantileAligner().fit(ben)
+    z = al.transform(np.array([[10, 10, 10], [100, 100, 100]]))
+    assert np.allclose(z[0], 0.5, atol=0.1)   # typical benign value -> middle
+    assert np.allclose(z[1], 1.0)             # far above all benign -> 1
+
+
+def test_iforest_threshold_gives_low_false_alarm():
+    import importlib.util
+    import numpy as np
+    spec = importlib.util.spec_from_file_location("rbo", ROOT / "scripts" / "run_benign_only.py")
+    rbo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rbo)
+    rng = np.random.default_rng(0)
+    anom = rbo.BenignAnomaly(rng.normal(size=(300, 4)), seed=0)
+    s = anom.score(rng.normal(size=(5000, 4)))     # unseen benign flows
+    assert (s >= rbo.IFOREST_THRESHOLD).mean() < 0.12
+    tr = anom.score_train()
+    assert 0.3 < tr.mean() < 0.7                   # cross-fitted scores are not all low
