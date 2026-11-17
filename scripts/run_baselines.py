@@ -12,6 +12,7 @@ interrupted Colab run can be resumed (finished rows are skipped).
 Usage:
     python scripts/run_baselines.py                       # first seed only
     python scripts/run_baselines.py --all-seeds           # 5 seeds (final numbers)
+    python scripts/run_baselines.py --seeds 44 45 46       # only some seeds
     python scripts/run_baselines.py --models RF XGB --feature-sets v3
 """
 from __future__ import annotations
@@ -54,6 +55,8 @@ def main() -> None:
     ap.add_argument("--feature-sets", nargs="*", default=None)
     ap.add_argument("--sources", nargs="*", default=None)
     ap.add_argument("--all-seeds", action="store_true")
+    ap.add_argument("--seeds", nargs="*", type=int, default=None,
+                    help="run only these seeds (e.g. split the five seeds over Colab and Kaggle)")
     ap.add_argument("--no-ensemble", action="store_true")
     args = ap.parse_args()
 
@@ -73,7 +76,7 @@ def main() -> None:
     models = args.models or bl["models"]
     fsets = args.feature_sets or bl["feature_sets"]
     sources = args.sources or keys
-    seeds = cfg["seeds"] if args.all_seeds else [cfg["seed"]]
+    seeds = args.seeds or (cfg["seeds"] if args.all_seeds else [cfg["seed"]])
     # the ensemble is only built from its full member list, so "ENS" always
     # means the same model; partial ensembles from earlier runs are dropped
     ens_members = list(bl["ensemble"])
