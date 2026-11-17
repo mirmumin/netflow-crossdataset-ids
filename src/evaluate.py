@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import numpy as np
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score, confusion_matrix,
-                             f1_score, precision_score, recall_score, roc_auc_score)
+from sklearn.metrics import (accuracy_score, average_precision_score, balanced_accuracy_score,
+                             confusion_matrix, f1_score, matthews_corrcoef, precision_score,
+                             recall_score, roc_auc_score)
 
 
 def binary_metrics(y_true, p_attack, threshold: float = 0.5) -> dict:
@@ -19,7 +20,10 @@ def binary_metrics(y_true, p_attack, threshold: float = 0.5) -> dict:
         "specificity": tn / (tn + fp) if (tn + fp) else np.nan,
         "fpr": fp / (fp + tn) if (fp + tn) else np.nan,                   # false alarm rate
         "balanced_accuracy": balanced_accuracy_score(y_true, y_pred),
+        "mcc": matthews_corrcoef(y_true, y_pred),
         "tp": int(tp), "fp": int(fp), "tn": int(tn), "fn": int(fn),
     }
-    out["auroc"] = roc_auc_score(y_true, p_attack) if len(np.unique(y_true)) == 2 else np.nan
+    two = len(np.unique(y_true)) == 2
+    out["auroc"] = roc_auc_score(y_true, p_attack) if two else np.nan
+    out["pr_auc"] = average_precision_score(y_true, p_attack) if two else np.nan   # threshold-free
     return out

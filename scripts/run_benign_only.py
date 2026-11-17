@@ -13,6 +13,17 @@ networks. Methods, all tested on the same target test flows:
                   benign traffic (benign-anchored quantile normalisation, src/align.py)
   Fusion-B-v2-k   Fusion-B on the aligned features (proposed variant)
 
+With --ablation, six component-ablation variants are added (same context, same
+threshold rule), to show what each of the two extra scores contributes:
+  TabPFN-B-k / TabPFN-B-v2-k            raw (or aligned) features only, no extra score
+  Fusion-B-src-k / Fusion-B-v2-src-k    + source XGBoost score only
+  Fusion-B-anom-k / Fusion-B-v2-anom-k  + target anomaly rank only
+
+With --contamination p, a fraction p of the k "benign" target flows are in fact
+target attacks (unknown to the method): it tests robustness to an imperfect
+benign sample. Target attack labels are used only to build this sample and to
+evaluate, never by a method. Results go to benign_only_raw_contam<p>.csv.
+
 Decision threshold. Every method gives a score; a flow is called an attack if
 its score is >= a threshold. Two rules are reported for every method (column "rule"):
   0.5         the usual fixed cut-off (meaningless for anomaly scores)
@@ -67,6 +78,9 @@ from src.utils import load_config, resolve, set_seed  # noqa: E402
 
 KEYS = ["seed", "target", "budget", "method", "rule"]
 K_METHODS = ["XGB-src", "IForest-k", "XGB-pool-k", "Fusion-B-k", "XGB-src-BQN-k", "Fusion-B-v2-k"]
+ABL_METHODS = ["TabPFN-B-k", "Fusion-B-src-k", "Fusion-B-anom-k",
+               "TabPFN-B-v2-k", "Fusion-B-v2-src-k", "Fusion-B-v2-anom-k"]
+ABL_PARTS = {"": (False, False), "-src": (True, False), "-anom": (False, True)}  # (src score, anomaly rank)
 BENIGN_Q = 0.95   # threshold = 95th percentile of cross-fitted scores on known benign flows
 N_FOLDS = 3       # folds for the cross-fitted benign scores
 
@@ -116,6 +130,12 @@ def main() -> None:
     ap.add_argument("--targets", nargs="*", default=None)
     ap.add_argument("--all-seeds", action="store_true")
     ap.add_argument("--save-scores", action="store_true")
+    ap.add_argument("--seeds", nargs="*", type=int, default=None, help="run only these seeds")
+    ap.add_argument("--ablation", action="store_true", help="add the component-ablation variants")
+    ap.add_argument("--contamination", type=float, default=0.0,
+                    help="fraction of the k benign target flows replaced by target attacks")
+    ap.add_argument("--methods", nargs="*", default=None,
+                    help="run only these of the main methods (XGB-src always runs)")
     args = ap.parse_args()
 
     # ---- 1. Settings ----
@@ -128,6 +148,8 @@ def main() -> None:
     res_dir.mkdir(parents=True, exist_ok=True)
     out_csv = res_dir / ("benign_only_raw.csv" if learner == "tabpfn"
                          else f"benign_only_raw_{learner}.csv")
+    if args.contamination > 0:
+        out_csv = out_csv.with_name(out_csv.stem + f"_contam{int(round(args.contamination * 100))}.csv")
     if args.save_scores:
         out_csv = out_csv.with_name(out_csv.stem + "_scorerun.csv")
         (res_dir / "scores").mkdir(exist_ok=True)
@@ -136,7 +158,9 @@ def main() -> None:
     data = {k: pd.read_parquet(proc / f"{k}.parquet") for k in keys}
     cols = set.intersection(*(set(d.columns) for d in data.values()))
     feats = feature_sets([c for c in next(iter(data.values())).columns if c in cols])["v3"]
-    seeds = cfg["seeds"] if args.all_seeds else [cfg["seed"]]
+    seeds = args.seeds or (cfg["seeds"] if args.all_seeds else [cfg["seed"]])
+    run_m = set(args.methods or K_METHODS) | {"XGB-src"}
+    check = [m for m in K_METHODS if m in run_m] + (ABL_METHODS if args.ablation else [])
     done = set()
     if out_csv.exists():  # resume: skip rows already computed
         done = set(map(tuple, pd.read_csv(out_csv)[KEYS].astype(str).values))
@@ -171,7 +195,7 @@ def main() -> None:
                           f"Spec={r['specificity']:.3f} AUROC={r['auroc']:.3f} ({secs:.1f}s)", flush=True)
 
             todo = [k for k in budgets if any((str(seed), tgt, str(k), m, "benign-q95") not in done
-                                              for m in K_METHODS)]
+                                              for m in check)]
             if not todo and (str(seed), tgt, "0", "XGB-src", "0.5") in done:
                 continue
 
@@ -204,8 +228,12 @@ def main() -> None:
 
             # ---- 4. Target side: only k BENIGN flows are labelled ----
             benign_pool = tr_t[tr_t[LABEL_COL] == 0]
+            attack_pool = tr_t[tr_t[LABEL_COL] == 1]
             for k in todo:
                 ben = benign_pool.sample(n=min(k, len(benign_pool)), random_state=seed)
+                if args.contamination > 0:   # some "benign" flows are really attacks (label not known)
+                    n_c = int(round(args.contamination * len(ben)))
+                    ben = pd.concat([ben.iloc[n_c:], attack_pool.sample(n=n_c, random_state=seed)])
                 X_b = to_matrix(ben, feats)
                 folds = list(KFold(N_FOLDS, shuffle=True, random_state=seed).split(X_b))
                 n_att = min(n_res, max(k, 50))
@@ -220,12 +248,14 @@ def main() -> None:
 
                 # 4a. source model with a target-calibrated threshold (k benign used for the threshold only)
                 record("XGB-src", k, p_src_te, t_src, benign_oof=xgb_src.predict_proba(X_b)[:, 1])
+                ok = lambda m: m in run_m and (str(seed), tgt, str(k), m, "benign-q95") not in done  # noqa: E731
 
                 # 4b. target-only anomaly detection
                 t0 = time.time()
                 anom = BenignAnomaly(X_b, seed)
                 s_te, s_b, s_att = anom.score(X_te), anom.score_train(), anom.score(X_att)
-                record("IForest-k", k, s_te, time.time() - t0, benign_oof=s_b)
+                if ok("IForest-k"):
+                    record("IForest-k", k, s_te, time.time() - t0, benign_oof=s_b)
 
                 # 4c. pooled: source + target benign, target rows weighted to equal source benign mass
                 t0 = time.time()
@@ -237,47 +267,73 @@ def main() -> None:
                     w[fit_mask.sum():] = max(1.0, (y_src[fit_mask] == 0).sum() / len(idx))
                     m = make_model("XGB", seed)
                     return m.fit(Xp, yp, xgbclassifier__sample_weight=w)
-                p_pool = fit_pool(np.arange(len(X_b))).predict_proba(X_te)[:, 1]
-                b_pool = oof(lambda tr, te: fit_pool(tr).predict_proba(X_b[te])[:, 1])
-                record("XGB-pool-k", k, p_pool, time.time() - t0, benign_oof=b_pool)
+                if ok("XGB-pool-k"):
+                    p_pool = fit_pool(np.arange(len(X_b))).predict_proba(X_te)[:, 1]
+                    b_pool = oof(lambda tr, te: fit_pool(tr).predict_proba(X_b[te])[:, 1])
+                    record("XGB-pool-k", k, p_pool, time.time() - t0, benign_oof=b_pool)
 
                 # 4d. Fusion-B: TabPFN context = target benign + held-out source attacks (raw features)
-                def fusion_b(Xb, ab, Xe, ae):
+                def fusion_b(Xb, ab, Xe, ae, use_src=True, use_anom=True):
                     ctx = np.vstack([Xb, X_att])
                     y = np.concatenate([np.zeros(len(Xb), int), np.ones(len(X_att), int)])
                     f = make_fewshot_learner(learner, seed, bc["tabpfn_version"])
-                    f.fit(np.column_stack([ctx, logit(xgb_src.predict_proba(ctx)[:, 1]),
-                                           np.concatenate([ab, s_att])]), y)
-                    return predict_proba_chunked(f, np.column_stack(
-                        [Xe, logit(xgb_src.predict_proba(Xe)[:, 1]), ae]))
-                t0 = time.time()
-                p_fb = fusion_b(X_b, s_b, X_te, s_te)
-                b_fb = oof(lambda tr, te: fusion_b(X_b[tr], s_b[tr], X_b[te], s_b[te]))
-                record("Fusion-B-k", k, p_fb, time.time() - t0, benign_oof=b_fb)
+                    c_cols, e_cols = [ctx], [Xe]
+                    if use_src:
+                        c_cols.append(logit(xgb_src.predict_proba(ctx)[:, 1]))
+                        e_cols.append(logit(xgb_src.predict_proba(Xe)[:, 1]))
+                    if use_anom:
+                        c_cols.append(np.concatenate([ab, s_att]))
+                        e_cols.append(ae)
+                    f.fit(np.column_stack(c_cols), y)
+                    return predict_proba_chunked(f, np.column_stack(e_cols))
+                if ok("Fusion-B-k"):
+                    t0 = time.time()
+                    p_fb = fusion_b(X_b, s_b, X_te, s_te)
+                    b_fb = oof(lambda tr, te: fusion_b(X_b[tr], s_b[tr], X_b[te], s_b[te]))
+                    record("Fusion-B-k", k, p_fb, time.time() - t0, benign_oof=b_fb)
 
                 # 4e. aligned zero-shot: target features mapped with the target benign flows
                 def bqn(Xb, Xe):
                     return xgb_al.predict_proba(BenignQuantileAligner(seed=seed).fit(Xb).transform(Xe))[:, 1]
-                t0 = time.time()
-                p_bqn = bqn(X_b, X_te)
-                b_bqn = oof(lambda tr, te: bqn(X_b[tr], X_b[te]))
-                record("XGB-src-BQN-k", k, p_bqn, t_al + time.time() - t0, benign_oof=b_bqn)
+                if ok("XGB-src-BQN-k"):
+                    t0 = time.time()
+                    p_bqn = bqn(X_b, X_te)
+                    b_bqn = oof(lambda tr, te: bqn(X_b[tr], X_b[te]))
+                    record("XGB-src-BQN-k", k, p_bqn, t_al + time.time() - t0, benign_oof=b_bqn)
 
                 # 4f. Fusion-B v2 (proposed variant): Fusion-B on benign-aligned features
-                def fusion_v2(Xb, ab, Xe, ae):
+                def fusion_v2(Xb, ab, Xe, ae, use_src=True, use_anom=True):
                     al = BenignQuantileAligner(seed=seed).fit(Xb)
                     ctx = np.vstack([al.transform(Xb), X_att_al])
                     y = np.concatenate([np.zeros(len(Xb), int), np.ones(len(X_att_al), int)])
                     f = make_fewshot_learner(learner, seed, bc["tabpfn_version"])
-                    f.fit(np.column_stack([ctx, logit(xgb_al.predict_proba(ctx)[:, 1]),
-                                           np.concatenate([ab, s_att])]), y)
                     Ze = al.transform(Xe)
-                    return predict_proba_chunked(f, np.column_stack(
-                        [Ze, logit(xgb_al.predict_proba(Ze)[:, 1]), ae]))
-                t0 = time.time()
-                p_v2 = fusion_v2(X_b, s_b, X_te, s_te)
-                b_v2 = oof(lambda tr, te: fusion_v2(X_b[tr], s_b[tr], X_b[te], s_b[te]))
-                record("Fusion-B-v2-k", k, p_v2, t_al + time.time() - t0, benign_oof=b_v2)
+                    c_cols, e_cols = [ctx], [Ze]
+                    if use_src:
+                        c_cols.append(logit(xgb_al.predict_proba(ctx)[:, 1]))
+                        e_cols.append(logit(xgb_al.predict_proba(Ze)[:, 1]))
+                    if use_anom:
+                        c_cols.append(np.concatenate([ab, s_att]))
+                        e_cols.append(ae)
+                    f.fit(np.column_stack(c_cols), y)
+                    return predict_proba_chunked(f, np.column_stack(e_cols))
+                if ok("Fusion-B-v2-k"):
+                    t0 = time.time()
+                    p_v2 = fusion_v2(X_b, s_b, X_te, s_te)
+                    b_v2 = oof(lambda tr, te: fusion_v2(X_b[tr], s_b[tr], X_b[te], s_b[te]))
+                    record("Fusion-B-v2-k", k, p_v2, t_al + time.time() - t0, benign_oof=b_v2)
+
+                # 4g. component ablation: the same context with only one or none of the two extra scores
+                if args.ablation:
+                    for fn, base, extra in [(fusion_b, "B", t_src), (fusion_v2, "B-v2", t_al)]:
+                        for suf, (us, ua) in ABL_PARTS.items():
+                            name = (f"TabPFN-{base}-k" if not suf else f"Fusion-{base}{suf}-k")
+                            if (str(seed), tgt, str(k), name, "benign-q95") in done:
+                                continue
+                            t0 = time.time()
+                            p_ab = fn(X_b, s_b, X_te, s_te, us, ua)
+                            b_ab = oof(lambda tr, te: fn(X_b[tr], s_b[tr], X_b[te], s_b[te], us, ua))
+                            record(name, k, p_ab, extra + time.time() - t0, benign_oof=b_ab)
 
             if args.save_scores:
                 np.savez_compressed(res_dir / "scores" / f"benign_only_{seed}_{tgt}.npz", **scores)
@@ -286,7 +342,8 @@ def main() -> None:
     # ---- 5. Summary table (mean over seeds) ----
     df = pd.read_csv(out_csv)
     tab = (df.groupby(["rule", "target", "budget", "method"])
-           [["f1", "balanced_accuracy", "recall", "specificity", "auroc"]].agg(["mean", "std"]).round(4))
+           [[c for c in ["f1", "balanced_accuracy", "mcc", "recall", "specificity", "auroc", "pr_auc"]
+             if c in df.columns]].agg(["mean", "std"]).round(4))
     tab.to_csv(res_dir / out_csv.name.replace("_raw", "_summary"))
     q = df[df.rule == f"benign-q{int(BENIGN_Q * 100)}"]
     print(f"\nThreshold rule: benign-q{int(BENIGN_Q * 100)} (mean over seeds)\n",

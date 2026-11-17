@@ -14,8 +14,13 @@ Outputs (results_dir):
 Needs ks_shift_benign.csv from scripts/eda_shift.py for the comparison
 (the importance table and figure are written without it).
 
+With --all-seeds the importance and the SHAP-vs-KS comparison are also computed
+for every seed (split, training sample and explained flows change with the seed)
+and written in long form to shap_importance_seeds.csv / shap_vs_ks_seeds.csv,
+together with the rank stability of the top features (shap_stability.csv).
+
 Usage:
-    python scripts/shap_analysis.py [results_dir] [--n-explain 2000]
+    python scripts/shap_analysis.py [results_dir] [--n-explain 2000] [--all-seeds]
 """
 from __future__ import annotations
 
@@ -56,6 +61,7 @@ def main() -> None:
     ap.add_argument("results_dir", nargs="?", default=None)
     ap.add_argument("--processed-dir", default=None)
     ap.add_argument("--n-explain", type=int, default=2000)
+    ap.add_argument("--all-seeds", action="store_true")
     args = ap.parse_args()
     cfg = load_config()
     seed = cfg["seed"]
@@ -70,25 +76,60 @@ def main() -> None:
     cols = set.intersection(*(set(d.columns) for d in data.values()))
     feats = feature_sets([c for c in next(iter(data.values())).columns if c in cols])["v3"]
 
-    imp = {}
-    for k, df in data.items():
-        tr, te = split(df, cfg["split"]["test_size"], seed)
-        tr = cap(tr, cfg["baselines"]["max_train"]["XGB"], seed)
-        model = make_model("XGB", seed).fit(to_matrix(tr, feats), tr[LABEL_COL].to_numpy())
-        ex = cap(te, args.n_explain, seed)
-        sv = tree_shap(model, to_matrix(ex, feats))
-        mean_abs = np.abs(sv).mean(axis=0)
-        imp[SHORT.get(k, k)] = mean_abs / mean_abs.sum()
-        top5 = pd.Series(imp[SHORT.get(k, k)], index=feats).nlargest(5)
-        print(f"{k}: top features " + ", ".join(f"{f} ({v:.2f})" for f, v in top5.items()), flush=True)
-    imp = pd.DataFrame(imp, index=feats)
-    imp["mean"] = imp.mean(axis=1)
-    imp = imp.sort_values("mean", ascending=False)
+    def importance(sd):
+        set_seed(sd)
+        imp = {}
+        for k, df in data.items():
+            tr, te = split(df, cfg["split"]["test_size"], sd)
+            tr = cap(tr, cfg["baselines"]["max_train"]["XGB"], sd)
+            model = make_model("XGB", sd).fit(to_matrix(tr, feats), tr[LABEL_COL].to_numpy())
+            ex = cap(te, args.n_explain, sd)
+            sv = tree_shap(model, to_matrix(ex, feats))
+            mean_abs = np.abs(sv).mean(axis=0)
+            imp[SHORT.get(k, k)] = mean_abs / mean_abs.sum()
+            top5 = pd.Series(imp[SHORT.get(k, k)], index=feats).nlargest(5)
+            print(f"seed {sd} {k}: top features " + ", ".join(f"{f} ({v:.2f})" for f, v in top5.items()),
+                  flush=True)
+        imp = pd.DataFrame(imp, index=feats)
+        imp["mean"] = imp.mean(axis=1)
+        return imp.sort_values("mean", ascending=False)
+
+    imp = importance(seed)
     imp.to_csv(res / "shap_importance.csv")
     print(f"Wrote {res / 'shap_importance.csv'}")
 
     ks_path = res / "ks_shift_benign.csv"
     ks = pd.read_csv(ks_path, index_col=0)["mean"] if ks_path.exists() else None
+
+    if args.all_seeds:
+        long, cmp_rows, tops = [], [], {}
+        for sd in cfg["seeds"]:
+            im = imp if sd == seed else importance(sd)
+            long.append(im.rename_axis("feature").reset_index().melt(
+                id_vars="feature", var_name="model", value_name="share").assign(seed=sd))
+            for col in im.columns:
+                tops[(sd, col)] = list(im[col].nlargest(10).index)
+                if ks is not None:
+                    common = im.index.intersection(ks.index)
+                    rho, p = spearmanr(im.loc[common, col], ks.loc[common])
+                    cmp_rows.append({"seed": sd, "model": col, "spearman_rho": rho, "p": p})
+        pd.concat(long).to_csv(res / "shap_importance_seeds.csv", index=False)
+        if cmp_rows:
+            pd.DataFrame(cmp_rows).to_csv(res / "shap_vs_ks_seeds.csv", index=False)
+        # rank stability: mean pairwise Jaccard overlap of the top-10 sets and the
+        # Spearman correlation of the full importance vectors between seeds
+        stab = []
+        L = pd.concat(long)
+        for col in imp.columns:
+            sds = cfg["seeds"]
+            jac = [len(set(tops[(a, col)]) & set(tops[(b, col)])) / len(set(tops[(a, col)]) | set(tops[(b, col)]))
+                   for i, a in enumerate(sds) for b in sds[i + 1:]]
+            W = L[L.model == col].pivot(index="feature", columns="seed", values="share")
+            rhos = [spearmanr(W[a], W[b])[0] for i, a in enumerate(sds) for b in sds[i + 1:]]
+            stab.append({"model": col, "top10_jaccard_mean": np.mean(jac), "top10_jaccard_min": np.min(jac),
+                         "rank_rho_mean": np.mean(rhos), "rank_rho_min": np.min(rhos)})
+        pd.DataFrame(stab).to_csv(res / "shap_stability.csv", index=False)
+        print("SHAP stability over seeds:\n", pd.DataFrame(stab).round(3).to_string(index=False))
     if ks is not None:
         rows = []
         top_ks = set(ks.nlargest(10).index)
