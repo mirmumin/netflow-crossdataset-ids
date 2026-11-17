@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2060" height="1000" viewBox="0 0 2060 1000" xmlns:c2pa="http://c2pa.org/manifest">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0,0 L10,5 L0,10 z" fill="#2b2d42"/></marker>
+<filter id="sh" x="-5%" y="-20%" width="110%" height="150%">
+<feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-opacity="0.18"/></filter>
+<style>
+text { font-family: "Times New Roman", "Liberation Serif", "DejaVu Serif", serif; fill: #1d1d1d; }
+.b { font-weight: bold; } .i { font-style: italic; fill: #333; }
+.s { font-family: "Liberation Sans", Arial, sans-serif; font-weight: bold; }
+</style></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="30" y="30" width="380" height="290" rx="26" fill="none" stroke="#222" stroke-width="3" stroke-dasharray="2,7" stroke-linecap="round"/>
+<text x="220.0" y="68" class="b" font-size="23" text-anchor="middle">SOURCE NETWORKS</text>
+<text x="220.0" y="94" class="i" font-size="18" text-anchor="middle">the other three, attacks labelled</text>
+<rect x="55" y="118.0" width="330" height="44" rx="22.0" fill="#d3e5f8" stroke="#4a8fd6" stroke-width="3" filter="url(#sh)"/>
+<text x="220.0" y="147.56" class="b" font-size="21" text-anchor="middle">TRAINING FLOWS</text>
+<rect x="55" y="198.0" width="330" height="44" rx="22.0" fill="#fad0d0" stroke="#e05a5a" stroke-width="3" filter="url(#sh)"/>
+<text x="220.0" y="227.56" class="b" font-size="21" text-anchor="middle">HELD-OUT ATTACKS R</text>
+<text x="220" y="285" class="i" font-size="18" text-anchor="middle">R is never used to train XGBoost</text>
+<rect x="30" y="345" width="380" height="205" rx="26" fill="none" stroke="#222" stroke-width="3" stroke-dasharray="2,7" stroke-linecap="round"/>
+<text x="220.0" y="383" class="b" font-size="23" text-anchor="middle">TARGET NETWORK</text>
+<text x="220.0" y="409" class="i" font-size="18" text-anchor="middle">new deployment, benign labels only</text>
+<rect x="55" y="428.0" width="330" height="44" rx="22.0" fill="#d2f0e0" stroke="#3aa66a" stroke-width="3" filter="url(#sh)"/>
+<text x="220.0" y="457.56" class="b" font-size="21" text-anchor="middle">k BENIGN FLOWS</text>
+<rect x="55" y="493.0" width="330" height="44" rx="22.0" fill="#e2e2e2" stroke="#8a8a8a" stroke-width="3" filter="url(#sh)"/>
+<text x="220.0" y="522.56" class="b" font-size="21" text-anchor="middle">TEST FLOWS (UNLABELLED)</text>
+<rect x="480" y="118.0" width="270" height="44" rx="22.0" fill="#fde3d0" stroke="#e8833a" stroke-width="3" filter="url(#sh)"/>
+<text x="615.0" y="147.56" class="b" font-size="21" text-anchor="middle">XGBOOST</text>
+<text x="615" y="190" class="i" font-size="18" text-anchor="middle">trained on source flows</text>
+<rect x="480" y="428.0" width="270" height="44" rx="22.0" fill="#e3dbf6" stroke="#8a6fd1" stroke-width="3" filter="url(#sh)"/>
+<text x="615.0" y="457.56" class="b" font-size="21" text-anchor="middle">ISOLATION FOREST</text>
+<text x="615" y="500" class="i" font-size="18" text-anchor="middle">fitted on k benign, 5-fold</text>
+<text x="615" y="522" class="i" font-size="18" text-anchor="middle">cross-fitted reference</text>
+<rect x="830" y="118.0" width="300" height="44" rx="22.0" fill="#fdf2bd" stroke="#d9ad00" stroke-width="3" filter="url(#sh)"/>
+<text x="980.0" y="147.56" class="b" font-size="21" text-anchor="middle">SOURCE SCORE s(x)</text>
+<text x="980" y="190" class="i" font-size="18" text-anchor="middle">what attacks look like elsewhere</text>
+<rect x="830" y="428.0" width="300" height="44" rx="22.0" fill="#fbd6e8" stroke="#d9559a" stroke-width="3" filter="url(#sh)"/>
+<text x="980.0" y="457.56" class="b" font-size="21" text-anchor="middle">ANOMALY RANK a(x)</text>
+<text x="980" y="500" class="i" font-size="18" text-anchor="middle">what is unusual in this network</text>
+<path d="M385,140 L472,140" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<path d="M750,140 L822,140" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<path d="M385,450 L472,450" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<path d="M750,450 L822,450" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="1200" y="25" width="330" height="485" rx="26" fill="none" stroke="#222" stroke-width="3" stroke-dasharray="2,7" stroke-linecap="round"/>
+<text x="1365.0" y="63" class="b" font-size="23" text-anchor="middle">AUGMENTED FLOW</text>
+<text x="1365.0" y="89" class="i" font-size="18" text-anchor="middle">φ(x) = [ x ; s(x) ; a(x) ]</text>
+<rect x="1225" y="118.0" width="280" height="44" rx="22.0" fill="#fdf2bd" stroke="#d9ad00" stroke-width="3" filter="url(#sh)"/>
+<text x="1365.0" y="147.56" class="b" font-size="21" text-anchor="middle">s(x)</text>
+<rect x="1225" y="273.0" width="280" height="44" rx="22.0" fill="#cdeff3" stroke="#2fb3c4" stroke-width="3" filter="url(#sh)"/>
+<text x="1365.0" y="301.84" class="b" font-size="19" text-anchor="middle">x : 47 NETFLOW FEATURES</text>
+<rect x="1225" y="428.0" width="280" height="44" rx="22.0" fill="#fbd6e8" stroke="#d9559a" stroke-width="3" filter="url(#sh)"/>
+<text x="1365.0" y="457.56" class="b" font-size="21" text-anchor="middle">a(x)</text>
+<path d="M1130,140 L1217,140" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<path d="M1130,450 L1217,450" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<path d="M385,515 L440,515 L440,580 L1290,580 L1290,518" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<text x="800" y="570" class="i" font-size="18" text-anchor="middle">every flow (context and test) is augmented the same way</text>
+<rect x="1200" y="640" width="330" height="215" rx="26" fill="none" stroke="#222" stroke-width="3" stroke-dasharray="2,7" stroke-linecap="round"/>
+<text x="1365.0" y="678" class="b" font-size="23" text-anchor="middle">CONTEXT SET</text>
+<text x="1365.0" y="704" class="i" font-size="18" text-anchor="middle">m = k source attacks (100 / 1000)</text>
+<rect x="1225" y="723.0" width="280" height="44" rx="22.0" fill="#d2f0e0" stroke="#3aa66a" stroke-width="3" filter="url(#sh)"/>
+<text x="1365.0" y="752.56" class="b" font-size="21" text-anchor="middle">k BENIGN → LABEL 0</text>
+<rect x="1225" y="788.0" width="280" height="44" rx="22.0" fill="#fad0d0" stroke="#e05a5a" stroke-width="3" filter="url(#sh)"/>
+<text x="1365.0" y="817.56" class="b" font-size="21" text-anchor="middle">R ATTACKS → LABEL 1</text>
+<path d="M1440,510 L1440,632" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1700" y="211.0" class="b" font-size="23" text-anchor="middle">TABPFN</text>
+<line x1="1660.0" y1="231.0" x2="1660.0" y2="369.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1631.0" y1="260.0" x2="1769.0" y2="260.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1680.0" y1="231.0" x2="1680.0" y2="369.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1631.0" y1="280.0" x2="1769.0" y2="280.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1700.0" y1="231.0" x2="1700.0" y2="369.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1631.0" y1="300.0" x2="1769.0" y2="300.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1720.0" y1="231.0" x2="1720.0" y2="369.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1631.0" y1="320.0" x2="1769.0" y2="320.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1740.0" y1="231.0" x2="1740.0" y2="369.0" stroke="#2b2d42" stroke-width="5"/>
+<line x1="1631.0" y1="340.0" x2="1769.0" y2="340.0" stroke="#2b2d42" stroke-width="5"/>
+<rect x="1645.0" y="245.0" width="110" height="110" rx="10" fill="#5b4bc4" stroke="#2b2d42" stroke-width="4"/>
+<rect x="1668" y="268" width="64" height="64" rx="6" fill="#ffd54a" stroke="#2b2d42" stroke-width="3"/>
+<text x="1700" y="311" class="s" font-size="30" text-anchor="middle" fill="#5b4bc4">AI</text>
+<text x="1700" y="407.0" class="i" font-size="17" text-anchor="middle">pretrained, no training</text>
+<text x="1700" y="429.0" class="i" font-size="17" text-anchor="middle">on the target network</text>
+<path d="M1530,295 L1625,295" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1578" y="280" class="i" font-size="17" text-anchor="middle">test</text>
+<path d="M1530,750 L1700,750 L1700,440" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1615" y="735" class="i" font-size="17" text-anchor="middle">context</text>
+<rect x="1800" y="278.0" width="240" height="44" rx="22.0" fill="#ffffff" stroke="#9a9a9a" stroke-width="3" filter="url(#sh)"/>
+<text x="1920.0" y="307.56" class="b" font-size="21" text-anchor="middle">SCORE p(x)</text>
+<path d="M1772,300 L1792,300" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="1800" y="408.0" width="240" height="44" rx="22.0" fill="#d3e5f8" stroke="#4a8fd6" stroke-width="3" filter="url(#sh)"/>
+<text x="1920.0" y="437.56" class="b" font-size="21" text-anchor="middle">THRESHOLD τ</text>
+<text x="1920" y="485" class="i" font-size="18" text-anchor="middle">95th percentile of the</text>
+<text x="1920" y="507" class="i" font-size="18" text-anchor="middle">cross-fitted benign scores</text>
+<path d="M1920,322 L1920,400" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="1790" y="578.0" width="125" height="44" rx="22.0" fill="#fad0d0" stroke="#e05a5a" stroke-width="3" filter="url(#sh)"/>
+<text x="1852.5" y="606.84" class="b" font-size="19" text-anchor="middle">ATTACK</text>
+<rect x="1925" y="578.0" width="125" height="44" rx="22.0" fill="#d2f0e0" stroke="#3aa66a" stroke-width="3" filter="url(#sh)"/>
+<text x="1987.5" y="606.84" class="b" font-size="19" text-anchor="middle">BENIGN</text>
+<path d="M1920,520 L1920,545 L1852,545 L1852,570" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<path d="M1920,545 L1987,545 L1987,570" fill="none" stroke="#2b2d42" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1852" y="650" class="i" font-size="17" text-anchor="middle">p ≥ τ</text>
+<text x="1987" y="650" class="i" font-size="17" text-anchor="middle">p &lt; τ</text>
+<rect x="30" y="680" width="640" height="150" rx="26" fill="none" stroke="#222" stroke-width="3" stroke-dasharray="10,8" stroke-linecap="round"/>
+<text x="350" y="720" class="b" font-size="21" text-anchor="middle">FUSION-B-v2 (VARIANT)</text>
+<text x="350" y="754" class="i" font-size="18" text-anchor="middle">the features of every network are first mapped to the quantiles</text>
+<text x="350" y="778" class="i" font-size="18" text-anchor="middle">of its own benign traffic (in the target: the k benign flows),</text>
+<text x="350" y="802" class="i" font-size="18" text-anchor="middle">then XGBoost and TabPFN are applied to the aligned features</text>
+<text x="1030.0" y="955" font-size="24" text-anchor="middle" class="r"><tspan class="b">Figure 2.</tspan> The proposed Fusion-B for benign-only cross-network intrusion detection.</text>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTo0OGMxMTAzNS1jNzBkLTQwNjktYTNjYi1lYjVhY2FlYzRhY2EAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaCn7D1CePBzyug1CjC0CXX8AAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo1NTNkZjMzNi01NmRhLTQ4OTYtOGE3MS1kYzczMDljYTVmZDJscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNouGw9eJJGtF29ibGQ95Jx6QAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggvBZpv0jaIxInNYLxeyNy9YNSKOzqeBsOKJ/nv1FXsJSkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaEcWmru/9u0DWBX8wGNm+m4AAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIBDGfKxlDF8GTttzJefArsj7KqkECg76XMm+6XxAPfiTZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GSsCZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjQ4YzExMDM1LWM3MGQtNDA2OS1hM2NiLWViNWFjYWVjNGFjYS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjZhYTM3YWNlLTY2NTgtNDlmOS1hNDNiLWNhNzZmMWFkZTAwMXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCC8Fmm/SNojEic1gvF7I3L1g1Io7Op4Gw4on+e/UVewlKJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggayoUVTdHA/YicaD9RX8k9ZDSsXxN5rOn/6DZ4HIxUiGiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggW5O6ivVaQMr+pE5mmKsW4RwCojl7EUHD9iwjee9BsYl0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQDHYfROBcST8nPLORGQnpuPovskR9W89JZLmxQbanS9LiATtrscfLjfMhJCYJebNGGI/fY4wnqJtezmLmQVaHkg=</c2pa:manifest></metadata></svg>

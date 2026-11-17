@@ -63,7 +63,7 @@ bash scripts/run_all.sh        # every step in order
 | 3 Baselines (RF, XGB, SVM, LR, KNN, Ensemble), in- and cross-dataset | `scripts/run_baselines.py`, `scripts/summarise_baselines.py` | `baselines_raw.csv`, `table_models.md`, `table_cross_*.csv` |
 | 4 Few-shot fusion | `scripts/run_fusion.py` | `fusion_raw.csv`, `fusion_summary.csv` |
 | 5 Benign-only target, Fusion-B / Fusion-B v2 | `scripts/run_benign_only.py --all-seeds` | `benign_only_raw.csv`, `benign_only_summary.csv` |
-| 6 Wilcoxon tests and figures | `scripts/stats_benign_only.py`, `scripts/plot_benign_only.py` | `stats_benign_only.csv`, `figures/benign_only_*.png/.pdf` |
+| 6 Wilcoxon tests and figures | `scripts/stats_benign_only.py`, `scripts/plot_benign_only.py`, `scripts/plot_paper_figures.py` | `stats_benign_only.csv`, `figures/benign_only_*.png`, `figures/fig_*.png` (+ .pdf) |
 | 7 Word report | `scripts/make_report.py` | `report.docx` |
 
 All experiment scripts append to their `*_raw.csv` and skip finished runs, so
@@ -91,6 +91,7 @@ notebooks/  00_colab_setup.ipynb (full pipeline on Colab), 01_eda.ipynb
 src/        data.py, features.py, splits.py, models.py, evaluate.py, fusion.py, align.py, utils.py
 scripts/    one script per pipeline step; run_all.sh runs them all
 tests/      pytest checks on synthetic data (python scripts/make_toy_data.py)
+docs/figures/  method diagram (Figure 2) as SVG/PNG/PDF and the script that draws it
 results/    result tables and figures (created by the scripts)
 ```
 

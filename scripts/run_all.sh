@@ -11,4 +11,5 @@ python scripts/run_fusion.py --all-seeds       # 4 few-shot fusion (GPU)
 python scripts/run_benign_only.py --all-seeds  # 5 benign-only target, Fusion-B / v2 (GPU)
 python scripts/stats_benign_only.py            # 6 Wilcoxon tests
 python scripts/plot_benign_only.py             #   paper figures
+python scripts/plot_paper_figures.py           #   remaining result figures
 python scripts/make_report.py                  # 7 Word report (results/report.docx)
