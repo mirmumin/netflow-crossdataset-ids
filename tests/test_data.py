@@ -139,3 +139,26 @@ def test_iforest_threshold_gives_low_false_alarm():
     assert (s >= thr).mean() < 0.12
     tr = anom.score_train()
     assert 0.3 < tr.mean() < 0.7                   # cross-fitted scores are not all low
+
+
+def test_eda_shap_and_roc_scripts_on_toy_data(tmp_path):
+    raw, proc, res = tmp_path / "raw", tmp_path / "proc", tmp_path / "res"
+    subprocess.run([sys.executable, "scripts/make_toy_data.py", str(raw)], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/prepare_data.py", "--raw-dir", str(raw),
+                    "--out-dir", str(proc), "--n-rows", "2000"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "scripts/eda_shift.py", str(res), "--processed-dir", str(proc)],
+                   cwd=ROOT, check=True)
+    assert (res / "ks_shift_benign.csv").exists()
+    subprocess.run([sys.executable, "scripts/shap_analysis.py", str(res), "--processed-dir", str(proc),
+                    "--n-explain", "200"], cwd=ROOT, check=True)
+    imp = pd.read_csv(res / "shap_importance.csv", index_col=0)
+    assert abs(imp.drop(columns="mean").sum().sum() - 4) < 1e-6   # each network normalised to 1
+    assert (res / "shap_vs_ks.csv").exists()
+    subprocess.run([sys.executable, "scripts/run_benign_only.py", "--processed-dir", str(proc),
+                    "--results-dir", str(res), "--learner", "rf", "--budgets", "100",
+                    "--targets", "toniot", "unsw", "--save-scores"], cwd=ROOT, check=True)
+    assert not (res / "benign_only_raw_rf.csv").exists()          # main results file untouched
+    assert (res / "scores" / "benign_only_42_toniot.npz").exists()
+    subprocess.run([sys.executable, "scripts/plot_roc_cm.py", str(res)], cwd=ROOT, check=True)
+    for name in ["fig_class_distribution", "fig_ks_shift", "fig_shap_vs_ks", "fig_roc_k100", "fig_cm_k100"]:
+        assert (res / "figures" / f"{name}.png").exists()

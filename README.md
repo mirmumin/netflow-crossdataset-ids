@@ -64,6 +64,7 @@ bash scripts/run_all.sh        # every step in order
 | 4 Few-shot fusion | `scripts/run_fusion.py` | `fusion_raw.csv`, `fusion_summary.csv` |
 | 5 Benign-only target, Fusion-B / Fusion-B v2 | `scripts/run_benign_only.py --all-seeds` | `benign_only_raw.csv`, `benign_only_summary.csv` |
 | 6 Wilcoxon tests and figures | `scripts/stats_benign_only.py`, `scripts/plot_benign_only.py`, `scripts/plot_paper_figures.py` | `stats_benign_only.csv`, `figures/benign_only_*.png`, `figures/fig_*.png` (+ .pdf) |
+| 6b Shift, SHAP, ROC | `scripts/eda_shift.py`, `scripts/shap_analysis.py`, `scripts/run_benign_only.py --save-scores`, `scripts/plot_roc_cm.py` | `ks_shift_benign.csv`, `shap_importance.csv`, `shap_vs_ks.csv`, `figures/fig_{class_distribution,ks_shift,shap_vs_ks,roc_k*,cm_k*}` |
 | 7 Word report | `scripts/make_report.py` | `report.docx` |
 
 All experiment scripts append to their `*_raw.csv` and skip finished runs, so
