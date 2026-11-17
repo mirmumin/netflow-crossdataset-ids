@@ -48,6 +48,11 @@ Open **`notebooks/00_colab_setup.ipynb`** in Colab with a T4 GPU and run it
 top to bottom. It runs Steps 0-7 below in order, explains each step, and
 writes all results to Google Drive so an interrupted session can resume.
 
+### Kaggle (when the Colab GPU quota is used up)
+`notebooks/02_kaggle_gpu.ipynb` runs the GPU steps (Setting B and the
+benign-only scores/ROC) on a Kaggle GPU from the same repository and zips the
+results for copying into the Drive results folder.
+
 ### Local
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -88,7 +93,7 @@ cross-fitted scores on the known benign flows (only benign labels are used).
 ```
 configs/    default.yaml: seeds, paths, subsample sizes, model settings
 data/       raw/ (downloads) and processed/ (parquet); both git-ignored
-notebooks/  00_colab_setup.ipynb (full pipeline on Colab), 01_eda.ipynb
+notebooks/  00_colab_setup.ipynb (full pipeline on Colab), 01_eda.ipynb, 02_kaggle_gpu.ipynb (GPU steps on Kaggle)
 src/        data.py, features.py, splits.py, models.py, evaluate.py, fusion.py, align.py, utils.py
 scripts/    one script per pipeline step; run_all.sh runs them all
 tests/      pytest checks on synthetic data (python scripts/make_toy_data.py)
