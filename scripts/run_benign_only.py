@@ -32,8 +32,14 @@ Leakage rules:
 Source = the other three networks (leave-one-network-out).
 Results: results/benign_only_raw.csv (one row per seed/target/k/method/rule).
 
+With --save-scores the run also writes every method's score for every test
+flow (results/scores/benign_only_<seed>_<target>.npz, used for ROC curves and
+confusion matrices) and appends its metrics to benign_only_raw_scorerun.csv
+instead, so the main results file is not duplicated.
+
 Usage:
     python scripts/run_benign_only.py              # 1 seed
+    python scripts/run_benign_only.py --save-scores  # 1 seed, keep per-flow scores
     python scripts/run_benign_only.py --all-seeds  # 5 seeds, for the paper
     python scripts/run_benign_only.py --learner rf # pipeline test without TabPFN
 """
@@ -109,6 +115,7 @@ def main() -> None:
     ap.add_argument("--learner", default=None)
     ap.add_argument("--targets", nargs="*", default=None)
     ap.add_argument("--all-seeds", action="store_true")
+    ap.add_argument("--save-scores", action="store_true")
     args = ap.parse_args()
 
     # ---- 1. Settings ----
@@ -121,6 +128,9 @@ def main() -> None:
     res_dir.mkdir(parents=True, exist_ok=True)
     out_csv = res_dir / ("benign_only_raw.csv" if learner == "tabpfn"
                          else f"benign_only_raw_{learner}.csv")
+    if args.save_scores:
+        out_csv = out_csv.with_name(out_csv.stem + "_scorerun.csv")
+        (res_dir / "scores").mkdir(exist_ok=True)
 
     keys = [k for k in cfg["datasets"] if (proc / f"{k}.parquet").exists()]
     data = {k: pd.read_parquet(proc / f"{k}.parquet") for k in keys}
@@ -141,12 +151,15 @@ def main() -> None:
             te_t = cap(te_t, bc["max_test"], seed)
             X_te, y_te = to_matrix(te_t, feats), te_t[LABEL_COL].to_numpy()
             rows = []
+            scores = {"y": y_te}   # per-flow scores, saved with --save-scores
 
             def record(method, k, p, secs, benign_oof=None):
                 """Score the test flows at 0.5 and (if benign scores given) at the benign-q95 threshold."""
+                scores[f"{method}|{k}"] = np.asarray(p, dtype="float32")
                 rules = [("0.5", 0.5)]
                 if benign_oof is not None:
                     rules.append((f"benign-q{int(BENIGN_Q * 100)}", float(np.quantile(benign_oof, BENIGN_Q))))
+                    scores[f"{method}|{k}|threshold"] = np.float32(rules[-1][1])
                 for rule, thr in rules:
                     r = {"seed": seed, "target": tgt, "budget": k, "method": method, "rule": rule,
                          "threshold": thr, "source": "+".join(src_list), "n_test": len(te_t),
@@ -266,6 +279,8 @@ def main() -> None:
                 b_v2 = oof(lambda tr, te: fusion_v2(X_b[tr], s_b[tr], X_b[te], s_b[te]))
                 record("Fusion-B-v2-k", k, p_v2, t_al + time.time() - t0, benign_oof=b_v2)
 
+            if args.save_scores:
+                np.savez_compressed(res_dir / "scores" / f"benign_only_{seed}_{tgt}.npz", **scores)
             pd.DataFrame(rows).to_csv(out_csv, mode="a", index=False, header=not out_csv.exists())
 
     # ---- 5. Summary table (mean over seeds) ----

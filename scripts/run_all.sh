@@ -12,4 +12,7 @@ python scripts/run_benign_only.py --all-seeds  # 5 benign-only target, Fusion-B 
 python scripts/stats_benign_only.py            # 6 Wilcoxon tests
 python scripts/plot_benign_only.py             #   paper figures
 python scripts/plot_paper_figures.py           #   remaining result figures
+python scripts/eda_shift.py                    #   class distribution + KS shift
+python scripts/shap_analysis.py                #   SHAP vs KS
+python scripts/run_benign_only.py --save-scores && python scripts/plot_roc_cm.py  #   ROC + confusion matrices
 python scripts/make_report.py                  # 7 Word report (results/report.docx)
